@@ -12,6 +12,7 @@
 #include "imgui_impl_opengl3.h"
 #include "implot.h"
 #include <stdio.h>
+#include <iostream>
 #define GL_SILENCE_DEPRECATION
 #if defined(IMGUI_IMPL_OPENGL_ES2)
 #include <GLES2/gl2.h>
@@ -31,26 +32,26 @@ void plotWorldState(const char *title, const Ingris& ingris) {
     double noseRadius = 0.1 * config.robotRadius;
 
     // Get the puck x- and y-coordinates as required for implot
-    int np = worldState->puckPoints.size();
+    int np = worldState->pucks.size();
     double* puckXs = new double[np];
     double* puckYs = new double[np];
     for (int i = 0; i < np; ++i) {
-        puckXs[i] = worldState->puckPoints[i].x;
-        puckYs[i] = worldState->puckPoints[i].y;
+        puckXs[i] = worldState->pucks[i].x;
+        puckYs[i] = worldState->pucks[i].y;
     }
 
     // As above, but for robots.  Also get coordinates for the "noses" of the
     // robots, which are the points at the front of the robot, and are used to
     // draw the direction of the robot.
-    int nr = worldState->robotPoses.size();
+    int nr = worldState->robots.size();
     double* robotXs = new double[nr];
     double* robotYs = new double[nr];
     double* robotNoseXs = new double[nr];
     double* robotNoseYs = new double[nr];
     for (int i = 0; i < nr; ++i) {
-        double x = worldState->robotPoses[i].x;
-        double y = worldState->robotPoses[i].y;
-        double theta = worldState->robotPoses[i].theta;
+        double x = worldState->robots[i].x;
+        double y = worldState->robots[i].y;
+        double theta = worldState->robots[i].theta;
         robotXs[i] = x;
         robotYs[i] = y;
         robotNoseXs[i] = x + (config.robotRadius - noseRadius) * cos(theta);
@@ -60,14 +61,23 @@ void plotWorldState(const char *title, const Ingris& ingris) {
     ImGui::Begin(title);
     ImPlot::SetNextAxesLimits(0, config.width, 0, config.height);
     if (ImPlot::BeginPlot(title, ImVec2(config.width,config.height), ImPlotFlags_::ImPlotFlags_Equal | ImPlotFlags_::ImPlotFlags_NoTitle)) {
-        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, config.puckRadius, ImPlot::GetColormapColor(0), IMPLOT_AUTO, ImPlot::GetColormapColor(0));
+        ImPlot::SetupLegend(ImPlotLocation_West, ImPlotLegendFlags_Outside);
+
+        ImVec2 plotSizeInPixels = ImPlot::GetPlotSize();
+        ImPlotRect plotRect = ImPlot::GetPlotLimits();
+        double scaleFactor = plotSizeInPixels.x / (plotRect.X.Max - plotRect.X.Min);
+
+        //std::cout << "plotSizeInPixels: " << plotSizeInPixels.x << ", " << plotSizeInPixels.y << "\n";
+        //double scaleFactor = plotSizeInPixels.x / config.width;
+
+        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, scaleFactor * config.puckRadius, ImPlot::GetColormapColor(0), IMPLOT_AUTO, ImPlot::GetColormapColor(0));
         ImPlot::PlotScatter("Pucks", puckXs, puckYs, np);
         ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.25f);
 
-        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, config.robotRadius, ImPlot::GetColormapColor(1), IMPLOT_AUTO, ImPlot::GetColormapColor(1));
+        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, scaleFactor * config.robotRadius, ImPlot::GetColormapColor(1), IMPLOT_AUTO, ImPlot::GetColormapColor(1));
         ImPlot::PlotScatter("Robots", robotXs, robotYs, nr);
 
-        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, noseRadius, ImPlot::GetColormapColor(2), IMPLOT_AUTO, ImPlot::GetColormapColor(2));
+        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, scaleFactor * noseRadius, ImPlot::GetColormapColor(2), IMPLOT_AUTO, ImPlot::GetColormapColor(2));
         ImPlot::PlotScatter("Robot Orientations", robotNoseXs, robotNoseYs, nr);
         ImPlot::PopStyleVar();
         ImPlot::EndPlot();
