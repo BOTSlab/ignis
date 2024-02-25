@@ -11,24 +11,86 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #include "implot.h"
-#include <stdio.h>
 #include <iostream>
+#include <sstream>
+#include <stdio.h>
 #define GL_SILENCE_DEPRECATION
 #if defined(IMGUI_IMPL_OPENGL_ES2)
 #include <GLES2/gl2.h>
 #endif
 #include <GLFW/glfw3.h> // Will drag system OpenGL headers
 
-#include "Ingris.hpp"
+#include "Ignis.hpp"
+
+// Global variables.
+int selectedRobotIndex = -1;
 
 static void glfw_error_callback(int error, const char* description)
 {
     fprintf(stderr, "GLFW Error %d: %s\n", error, description);
 }
 
-void plotWorldState(const char *title, const Ingris& ingris) {
-    auto worldState = ingris.simWorldState;
-    auto config = ingris.config;
+void plotInteraction(int nr, double *robotXs, double *robotYs, double scaleFactor, WorldConfig &config, std::__1::shared_ptr<WorldState> &worldState)
+{
+    if (ImPlot::IsPlotHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Left))
+    {
+        ImVec2 mousePos = ImGui::GetMousePos();
+        ImPlotPoint plotMousePos = ImPlot::GetPlotMousePos();
+        double mouseX = plotMousePos.x;
+        double mouseY = plotMousePos.y;
+
+        // Check if the mouse click is within the robot scatter plot
+        selectedRobotIndex = -1;
+        for (int i = 0; i < nr; ++i)
+        {
+            double robotX = robotXs[i];
+            double robotY = robotYs[i];
+            double distance = sqrt((mouseX - robotX) * (mouseX - robotX) + (mouseY - robotY) * (mouseY - robotY));
+
+            // If the mouse click is within the robot, set the selectedRobotIndex to the current robot index
+            if (distance <= config.robotRadius)
+            {
+                selectedRobotIndex = i;
+                break;
+            }
+        }
+    }
+
+    // Handle arrow keys to control the selected robot's speed
+    if (selectedRobotIndex != -1)
+    {
+        ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.25f);
+        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 1.1 * scaleFactor * config.robotRadius, ImPlot::GetColormapColor(1), IMPLOT_AUTO, ImPlot::GetColormapColor(1));
+        ImPlot::PlotScatter("Selected Robot", &robotXs[selectedRobotIndex], &robotYs[selectedRobotIndex], 1);
+
+        // The selected robot will be manually controlled, with zero speed by default.
+        worldState->robots[selectedRobotIndex].controlInput.forwardSpeed = 0;
+        worldState->robots[selectedRobotIndex].controlInput.angularSpeed = 0;
+
+        if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_UpArrow)))
+        {
+            worldState->robots[selectedRobotIndex].controlInput.forwardSpeed = 1.5;
+        }
+        if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_DownArrow)))
+        {
+            worldState->robots[selectedRobotIndex].controlInput.forwardSpeed = -1.5;
+        }
+        if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_LeftArrow)))
+        {
+            worldState->robots[selectedRobotIndex].controlInput.angularSpeed = 0.1;
+        }
+        if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_RightArrow)))
+        {
+            worldState->robots[selectedRobotIndex].controlInput.angularSpeed = -0.1;
+        }
+    }
+}
+
+
+void plotWorldState(const char* title, const Ignis& ignis)
+{
+    auto worldState = ignis.simWorldState;
+    auto config = ignis.config;
     double noseRadius = 0.1 * config.robotRadius;
 
     // Get the puck x- and y-coordinates as required for implot
@@ -58,30 +120,100 @@ void plotWorldState(const char *title, const Ingris& ingris) {
         robotNoseYs[i] = y + (config.robotRadius - noseRadius) * sin(theta);
     }
 
-    ImGui::Begin(title);
-    ImPlot::SetNextAxesLimits(0, config.width, 0, config.height);
-    if (ImPlot::BeginPlot(title, ImVec2(config.width,config.height), ImPlotFlags_::ImPlotFlags_Equal | ImPlotFlags_::ImPlotFlags_NoTitle)) {
-        ImPlot::SetupLegend(ImPlotLocation_West, ImPlotLegendFlags_Outside);
+    // Now get the x- and y-coordinates for the plan.  First figure out how
+    // many total points are there for all robots.  We are going to plot the
+    // planned tracks for all robots together.
+    auto plan = ignis.plan;
+    int nPlan = 0;
+    for (auto& [robotIndex, vector_of_tracks] : *plan) {
+        for (auto& track : vector_of_tracks) {
+            nPlan += track.points.size();
+        }
+    }
+    double* planXs = new double[nPlan];
+    double* planYs = new double[nPlan];
+    int i = 0;
+    for (auto& [robotIndex, vector_of_tracks] : *plan) {
+        for (auto& track : vector_of_tracks) {
+            for (auto& point : track.points) {
+                planXs[i] = point.x;
+                planYs[i] = point.y;
+                i++;
+            }
+        }
+    }
+    printf("nPlan: %d\n", nPlan);
+    printf("i: %d\n", i);
 
+    double boundaryXs[] = { 0, static_cast<double>(config.width), static_cast<double>(config.width), 0 };
+    double boundaryYs[] = { 0, 0, static_cast<double>(config.height), static_cast<double>(config.height) };
+
+    ImGui::Begin(title);
+    double buffer = 100;
+    ImPlot::SetNextAxesLimits(-buffer, config.width + buffer, -buffer, config.height + buffer);
+    if (ImPlot::BeginPlot(title, ImVec2(config.width, config.height), ImPlotFlags_::ImPlotFlags_Equal | ImPlotFlags_::ImPlotFlags_NoTitle)) {
+
+        ImPlot::SetupLegend(ImPlotLocation_South, ImPlotLegendFlags_Outside);
+
+        // Draw the boundaries of the world.
+        ImPlot::PlotLine("Boundary", boundaryXs, boundaryYs, 4, ImPlotLineFlags_Loop, ImPlotLineFlags_Shaded);
+
+        // Setup the scaling factor for the markers.
         ImVec2 plotSizeInPixels = ImPlot::GetPlotSize();
         ImPlotRect plotRect = ImPlot::GetPlotLimits();
         double scaleFactor = plotSizeInPixels.x / (plotRect.X.Max - plotRect.X.Min);
 
-        //std::cout << "plotSizeInPixels: " << plotSizeInPixels.x << ", " << plotSizeInPixels.y << "\n";
-        //double scaleFactor = plotSizeInPixels.x / config.width;
-
         ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, scaleFactor * config.puckRadius, ImPlot::GetColormapColor(0), IMPLOT_AUTO, ImPlot::GetColormapColor(0));
         ImPlot::PlotScatter("Pucks", puckXs, puckYs, np);
-        ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.25f);
 
+        ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.25f);
         ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, scaleFactor * config.robotRadius, ImPlot::GetColormapColor(1), IMPLOT_AUTO, ImPlot::GetColormapColor(1));
         ImPlot::PlotScatter("Robots", robotXs, robotYs, nr);
 
         ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, scaleFactor * noseRadius, ImPlot::GetColormapColor(2), IMPLOT_AUTO, ImPlot::GetColormapColor(2));
         ImPlot::PlotScatter("Robot Orientations", robotNoseXs, robotNoseYs, nr);
         ImPlot::PopStyleVar();
+
+        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 1, ImPlot::GetColormapColor(4), IMPLOT_AUTO, ImPlot::GetColormapColor(4));
+        ImPlot::PlotScatter("Plans", planXs, planYs, nPlan);
+
+        for (auto& [robotIndex, vector_of_tracks] : *plan) {
+            for (auto& track : vector_of_tracks) {
+                std::ostringstream oss;
+                oss << track.score;
+                ImPlot::PlotText(oss.str().c_str(), track.points.back().x, track.points.back().y);
+            }
+        }
+
+        plotInteraction(nr, robotXs, robotYs, scaleFactor, config, worldState);
+
         ImPlot::EndPlot();
     }
+    ImGui::End();
+
+    delete [] puckXs;
+    delete [] puckYs;
+    delete [] robotXs;
+    delete [] robotYs;
+    delete [] robotNoseXs;
+    delete [] robotNoseYs;
+    delete [] planXs;
+    delete [] planYs;
+}
+
+void handleControlsWindow(Ignis &ignis, ImGuiIO &io)
+{
+    static float forwardSpeed = 0.0;
+    static float angularSpeed = 0.0;
+
+    ImGui::Begin("Controls");
+
+    if (ImGui::Button("Reset"))
+        ignis.reset();
+
+    ImGui::SameLine();
+
+    ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
     ImGui::End();
 }
 
@@ -92,7 +224,7 @@ int main(int, char**)
     if (!glfwInit())
         return 1;
 
-    // Decide GL+GLSL versions
+        // Decide GL+GLSL versions
 #if defined(IMGUI_IMPL_OPENGL_ES2)
     // GL ES 2.0 + GLSL 100
     const char* glsl_version = "#version 100";
@@ -104,19 +236,19 @@ int main(int, char**)
     const char* glsl_version = "#version 150";
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // Required on Mac
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // 3.2+ only
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // Required on Mac
 #else
     // GL 3.0 + GLSL 130
     const char* glsl_version = "#version 130";
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-    //glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
-    //glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // 3.0+ only
+    // glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
+    // glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // 3.0+ only
 #endif
 
     // Create window with graphics context
-    GLFWwindow* window = glfwCreateWindow(1280, 720, "ingris", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(1280, 720, "Ignis", nullptr, nullptr);
     if (window == nullptr)
         return 1;
     glfwMakeContextCurrent(window);
@@ -126,13 +258,14 @@ int main(int, char**)
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImPlot::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+    ImGuiIO& io = ImGui::GetIO();
+    (void)io;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad; // Enable Gamepad Controls
 
     // Setup Dear ImGui style
     ImGui::StyleColorsDark();
-    //ImGui::StyleColorsLight();
+    // ImGui::StyleColorsLight();
 
     // Setup Platform/Renderer backends
     ImGui_ImplGlfw_InitForOpenGL(window, true);
@@ -141,13 +274,11 @@ int main(int, char**)
     // Our state
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
-    Ingris ingris;
+    Ignis ignis;
 
     // Main loop
-    while (!glfwWindowShouldClose(window))
-    {
-        ingris.runSim();
-        ingris.simWorldState->print();
+    while (!glfwWindowShouldClose(window)) {
+        ignis.step();
 
         // Poll and handle events (inputs, window resize, etc.)
         // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
@@ -161,29 +292,10 @@ int main(int, char**)
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        // 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
-        {
-            static float f = 0.0f;
-            static int counter = 0;
+        handleControlsWindow(ignis, io);
 
-            ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
-
-            ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-
-            ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-            ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
-
-            if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-                counter++;
-            ImGui::SameLine();
-            ImGui::Text("counter = %d", counter);
-
-            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
-            ImGui::End();
-        }
-
-        plotWorldState("Simulation", ingris);
-        //plotWorldState("Prediction");
+        plotWorldState("Simulation", ignis);
+        // plotWorldState("Prediction");
 
         // Rendering
         ImGui::Render();

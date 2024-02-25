@@ -1,8 +1,8 @@
-#include "Ingris.hpp"
+#include "Ignis.hpp"
 
 int main() {
-    Ingris ingris;
-    ingris.runSim();
-    ingris.simWorldState->print();
+    Ignis ignis;
+    ignis.step();
+    ignis.simWorldState->print();
     return 0;
 }
