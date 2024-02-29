@@ -10,7 +10,7 @@ namespace Sim {
 const double dragCoefficient = 0.9;
 
 // Handle collisions between all circle bodies in the world by updating their velocities.
-void dynamicCollisionHandling(std::vector<CircleBody*> allBodies)
+void dynamicCollisionHandling(std::vector<CircleBody*> allBodies, int &nRobotRobotCollisions)
 {
     for (auto& b1 : allBodies) {
         for (auto& b2 : allBodies) {
@@ -48,15 +48,15 @@ void dynamicCollisionHandling(std::vector<CircleBody*> allBodies)
                 b2->vx -= impulseX / b2->mass;
                 b2->vy -= impulseY / b2->mass;
 
-                b1->nCollisions++;
-                b2->nCollisions++;
+                if (b1->type == BodyType::Robot && b2->type == BodyType::Robot)
+                    nRobotRobotCollisions++;
             }
         }
     }
 }
 
 // Handle collisions between all circle bodies by modifying their positions.
-void staticCollisionHandling(std::vector<CircleBody*> allBodies)
+void staticCollisionHandling(std::vector<CircleBody*> allBodies, int &nRobotRobotCollisions)
 {
     for (auto& b1 : allBodies) {
         for (auto& b2 : allBodies) {
@@ -79,37 +79,41 @@ void staticCollisionHandling(std::vector<CircleBody*> allBodies)
                 b2->x -= penetrationDepth * nx * 0.5;
                 b2->y -= penetrationDepth * ny * 0.5;
 
-                b1->nCollisions++;
-                b2->nCollisions++;
+                if (b1->type == BodyType::Robot && b2->type == BodyType::Robot)
+                    nRobotRobotCollisions++;
             }
         }
     }
 }
 
 // Handle collisions between all circle bodies and the boundaries of the world.
-void boundaryCollisionHandling(std::vector<CircleBody*> allBodies)
+void boundaryCollisionHandling(std::vector<CircleBody*> allBodies, int &nRobotBoundaryCollisions)
 {
     for (auto& body : allBodies) {
         // Check if the body is outside the boundary
         if (body->x - body->radius < 0) {
             body->x = body->radius;
             body->vx *= -1; // Reverse the velocity component in x direction
-            body->nCollisions++;
+            if (body->type == BodyType::Robot)
+                nRobotBoundaryCollisions++;
         }
         if (body->x + body->radius > config.width) {
             body->x = config.width - body->radius;
             body->vx *= -1; // Reverse the velocity component in x direction
-            body->nCollisions++;
+            if (body->type == BodyType::Robot)
+                nRobotBoundaryCollisions++;
         }
         if (body->y - body->radius < 0) {
             body->y = body->radius;
             body->vy *= -1; // Reverse the velocity component in y direction
-            body->nCollisions++;
+            if (body->type == BodyType::Robot)
+                nRobotBoundaryCollisions++;
         }
         if (body->y + body->radius > config.height) {
             body->y = config.height - body->radius;
             body->vy *= -1; // Reverse the velocity component in y direction
-            body->nCollisions++;
+            if (body->type == BodyType::Robot)
+                nRobotBoundaryCollisions++;
         }
     }
 }
@@ -118,9 +122,9 @@ void update(std::shared_ptr<WorldState> worldState)
 {
     auto allBodies = worldState->getAllCircleBodies();
 
-    dynamicCollisionHandling(allBodies);
-    staticCollisionHandling(allBodies);
-    boundaryCollisionHandling(allBodies);
+    dynamicCollisionHandling(allBodies, worldState->nRobotRobotCollisions);
+    staticCollisionHandling(allBodies, worldState->nRobotRobotCollisions);
+    boundaryCollisionHandling(allBodies, worldState->nRobotBoundaryCollisions);
 
     for (auto& robot : worldState->robots) {
         // Incorporate the control input into the robot's state.

@@ -142,8 +142,8 @@ void plotWorldState(const char* title, const Ignis& ignis)
             }
         }
     }
-    printf("nPlan: %d\n", nPlan);
-    printf("i: %d\n", i);
+    //printf("nPlan: %d\n", nPlan);
+    //printf("i: %d\n", i);
 
     double boundaryXs[] = { 0, static_cast<double>(config.width), static_cast<double>(config.width), 0 };
     double boundaryYs[] = { 0, 0, static_cast<double>(config.height), static_cast<double>(config.height) };

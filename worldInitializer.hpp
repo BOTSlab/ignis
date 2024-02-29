@@ -20,7 +20,7 @@ std::shared_ptr<WorldState> worldInitializer() {
 
     // Generate randomly position pucks and robots.
     for (int i = 0; i < config.numberOfPucks; i++)
-        world->pucks.push_back(CircleBody(puckXDist(gen), puckYDist(gen), config.puckRadius, 1.0));
+        world->pucks.push_back(CircleBody(BodyType::Puck, puckXDist(gen), puckYDist(gen), config.puckRadius, 1.0));
     for (int i = 0; i < config.numberOfRobots; i++)
         world->robots.push_back(Robot(robotXDist(gen), robotYDist(gen), config.robotRadius, 100.0,  robotThetaDist(gen)));
 

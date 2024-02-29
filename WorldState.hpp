@@ -2,13 +2,18 @@
 #include <iostream>
 #include <vector>
 
+enum class BodyType {
+    Robot,
+    Puck
+};
+
 struct CircleBody {
+    BodyType type;
     double x, y, radius, mass;
     double vx, vy;
-    int nCollisions = 0;
 
-    CircleBody(double x, double y, double radius, double mass, double vx = 0.0, double vy = 0.0)
-        : x(x), y(y), radius(radius), mass(mass), vx(vx), vy(vy) {}
+    CircleBody(BodyType type, double x, double y, double radius, double mass, double vx = 0.0, double vy = 0.0)
+        : type(type), x(x), y(y), radius(radius), mass(mass), vx(vx), vy(vy) {}
 };
 
 struct ControlInput {
@@ -20,7 +25,7 @@ struct ControlInput {
 
 struct Robot : public CircleBody {
     Robot(double x, double y, double radius, double mass, double theta, double vx = 0.0, double vy = 0.0)
-        : CircleBody(x, y, radius, mass, vx, vy), theta(theta) {}
+        : CircleBody(BodyType::Robot, x, y, radius, mass, vx, vy), theta(theta) {}
 
     double theta;
     ControlInput controlInput;
@@ -29,6 +34,13 @@ struct Robot : public CircleBody {
 struct WorldState {
     std::vector<Robot> robots;
     std::vector<CircleBody> pucks;
+    int nRobotRobotCollisions = 0;
+    int nRobotBoundaryCollisions = 0;
+
+    void resetCollisionCounts() {
+        nRobotRobotCollisions = 0;
+        nRobotBoundaryCollisions = 0;
+    }
 
     // BAD: Is there a better way to get all the circle bodies?
     std::vector<CircleBody*> getAllCircleBodies() {

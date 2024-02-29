@@ -8,9 +8,6 @@
 #include "Planning.hpp"
 
 namespace CurveFollowing {
-    const double maxForwardSpeed = 0.1;
-    const double maxAngularSpeed = 0.01;
-
     // Given the current state of the world and a plan (with one track per robot),
     // set the robots' control inputs to follow the curve represented by the plan.
     void updateControlInputs(std::shared_ptr<WorldState> worldState, std::shared_ptr<Plan> plan) {
@@ -44,9 +41,9 @@ namespace CurveFollowing {
             if (angleDifference < -M_PI) angleDifference += 2 * M_PI;
 
             // Set the control input based on the angle difference.
-            double angularSpeed = maxAngularSpeed * angleDifference;
+            double angularSpeed = config.maxAngularSpeed * angleDifference;
 
-            worldState->robots[i].controlInput = {maxForwardSpeed, angularSpeed};
+            worldState->robots[i].controlInput = {config.maxForwardSpeed, angularSpeed};
         }
     }
 };
