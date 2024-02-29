@@ -31,20 +31,6 @@ std::shared_ptr<Plan> plan(std::shared_ptr<WorldState> worldState, PlanOperation
         std::shared_ptr<Track> bestTrack = nullptr;
         double bestScore = -std::numeric_limits<double>::max();
 
-        // Choose a set of goal positions for the robot to reach.  They
-        // will be distributed uniformly on an arc in front of the robot.
-        /*
-        double minAngle = -config.goalHalfAngleRange;
-        double maxAngle = config.goalHalfAngleRange;
-        for (int j = 0; j < config.numberOfTracks; ++j) {
-            double angle = minAngle + (maxAngle - minAngle) * j / (config.numberOfTracks - 1);
-            double goalX = x + config.goalDistance * cos(theta + angle);
-            double goalY = y + config.goalDistance * sin(theta + angle);
-
-            //std::shared_ptr<Track> track = TrackGeneration::smoothController1(x, y, theta, goalX, goalY);
-            //std::shared_ptr<Track> track = TrackGeneration::lookupTableTrack(x, y, theta, goalX, goalY);
-            std::shared_ptr<Track> track = TrackGeneration::quadBezierTrack(x, y, theta, goalX, goalY);
-        */
         double maxTurningRadius = 500;
         for (int j = 0; j < config.numberOfTracks; ++j) {
 
