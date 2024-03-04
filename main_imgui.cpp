@@ -23,6 +23,8 @@
 #include "Ignis.hpp"
 
 // Global variables.
+bool paused = true;
+bool stepOnce = true;
 int selectedRobotIndex = -1;
 
 static void glfw_error_callback(int error, const char* description)
@@ -120,30 +122,57 @@ void plotWorldState(const char* title, const Ignis& ignis)
         robotNoseYs[i] = y + (config.robotRadius - noseRadius) * sin(theta);
     }
 
-    // Now get the x- and y-coordinates for the plan.  First figure out how
+    // Now get the x- and y-coordinates for the tracks.  First figure out how
     // many total points are there for all robots.  We are going to plot the
-    // planned tracks for all robots together.
-    auto plan = ignis.plan;
-    int nPlan = 0;
-    for (auto& [robotIndex, vector_of_tracks] : *plan) {
-        for (auto& track : vector_of_tracks) {
-            nPlan += track.points.size();
+    // tracks for all robots together.
+    auto robotIndexToTracks = ignis.robotIndexToTracks;
+    int nPointsInAllTracks = 0;
+    int nPointsInBestTracks = 0;
+    for (int i = 0; i < nr; ++i) {
+        for (auto& track : robotIndexToTracks->at(i)) {
+            nPointsInAllTracks += track.poses.size();
+            if (track.best)
+                nPointsInBestTracks += track.poses.size();
         }
     }
-    double* planXs = new double[nPlan];
-    double* planYs = new double[nPlan];
-    int i = 0;
-    for (auto& [robotIndex, vector_of_tracks] : *plan) {
-        for (auto& track : vector_of_tracks) {
-            for (auto& point : track.points) {
-                planXs[i] = point.x;
-                planYs[i] = point.y;
-                i++;
+    double* allTrackXs = new double[nPointsInAllTracks];
+    double* allTrackYs = new double[nPointsInAllTracks];
+    double* bestTrackXs = new double[nPointsInBestTracks];
+    double* bestTrackYs = new double[nPointsInBestTracks];
+    int allTracksIndex = 0, bestTrackIndex = 0;
+    for (int i = 0; i < nr; ++i) {
+        for (auto& track : robotIndexToTracks->at(i)) {
+            for (auto& point : track.poses) {
+                allTrackXs[allTracksIndex] = point.x;
+                allTrackYs[allTracksIndex] = point.y;
+                allTracksIndex++;
+                if (track.best) {
+                    bestTrackXs[bestTrackIndex] = point.x;
+                    bestTrackYs[bestTrackIndex] = point.y;
+                    bestTrackIndex++;
+                }
             }
         }
     }
-    //printf("nPlan: %d\n", nPlan);
+    //printf("nPointsInAllTracks: %d\n", nPointsInAllTracks);
     //printf("i: %d\n", i);
+
+    // Get the x- and y-coordinates for each robot's plan.
+    auto robotIndexToPlans = ignis.robotIndexToPlans;
+    int nPointsInAllPlans = 0;
+    for (int i = 0; i < nr; ++i) {
+        nPointsInAllPlans += robotIndexToPlans->at(i).poses.size();
+    }
+    double* planXs = new double[nPointsInAllPlans];
+    double* planYs = new double[nPointsInAllPlans];
+    int planIndex = 0;
+    for (int i = 0; i < nr; ++i) {
+        for (auto& point : robotIndexToPlans->at(i).poses) {
+            planXs[planIndex] = point.x;
+            planYs[planIndex] = point.y;
+            planIndex++;
+        }
+    }
 
     double boundaryXs[] = { 0, static_cast<double>(config.width), static_cast<double>(config.width), 0 };
     double boundaryYs[] = { 0, 0, static_cast<double>(config.height), static_cast<double>(config.height) };
@@ -175,13 +204,20 @@ void plotWorldState(const char* title, const Ignis& ignis)
         ImPlot::PopStyleVar();
 
         ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 1, ImPlot::GetColormapColor(4), IMPLOT_AUTO, ImPlot::GetColormapColor(4));
-        ImPlot::PlotScatter("Plans", planXs, planYs, nPlan);
+        ImPlot::PlotScatter("Tracks", allTrackXs, allTrackYs, nPointsInAllTracks);
 
-        for (auto& [robotIndex, vector_of_tracks] : *plan) {
-            for (auto& track : vector_of_tracks) {
+        ImPlot::SetNextMarkerStyle(ImPlotMarker_Asterisk, 3, ImPlot::GetColormapColor(5), IMPLOT_AUTO, ImPlot::GetColormapColor(5));
+        ImPlot::PlotScatter("Best Track", bestTrackXs, bestTrackYs, nPointsInBestTracks);
+
+        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 1, ImPlot::GetColormapColor(6), IMPLOT_AUTO, ImPlot::GetColormapColor(6));
+        ImPlot::PlotScatter("Plan", planXs, planYs, nPointsInAllPlans);
+
+
+        for (int i = 0; i < nr; ++i) {
+            for (auto& track : robotIndexToTracks->at(i)) {
                 std::ostringstream oss;
                 oss << track.score;
-                ImPlot::PlotText(oss.str().c_str(), track.points.back().x, track.points.back().y);
+                ImPlot::PlotText(oss.str().c_str(), track.poses.back().x, track.poses.back().y);
             }
         }
 
@@ -197,6 +233,8 @@ void plotWorldState(const char* title, const Ignis& ignis)
     delete [] robotYs;
     delete [] robotNoseXs;
     delete [] robotNoseYs;
+    delete [] allTrackXs;
+    delete [] allTrackYs;
     delete [] planXs;
     delete [] planYs;
 }
@@ -211,7 +249,16 @@ void handleControlsWindow(Ignis &ignis, ImGuiIO &io)
     if (ImGui::Button("Reset"))
         ignis.reset();
 
-    ImGui::SameLine();
+    if (!paused && ImGui::Button("Pause"))
+        paused = true;
+
+    if (paused && ImGui::Button("Play"))
+        paused = false;
+
+    if (paused && ImGui::Button("Step"))
+        stepOnce = true;
+
+    //ImGui::SameLine();
 
     ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
     ImGui::End();
@@ -271,14 +318,14 @@ int main(int, char**)
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init(glsl_version);
 
-    // Our state
-    ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-
     Ignis ignis;
 
     // Main loop
     while (!glfwWindowShouldClose(window)) {
-        ignis.step();
+        if (!paused || stepOnce) {
+            ignis.step();
+            stepOnce = false;
+        }
 
         // Poll and handle events (inputs, window resize, etc.)
         // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
@@ -302,6 +349,7 @@ int main(int, char**)
         int display_w, display_h;
         glfwGetFramebufferSize(window, &display_w, &display_h);
         glViewport(0, 0, display_w, display_h);
+        ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
         glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
         glClear(GL_COLOR_BUFFER_BIT);
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

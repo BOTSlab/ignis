@@ -1,7 +1,10 @@
 #pragma once
-#include "WorldConfig.hpp"
-#include "Track.hpp"
 #include <vector>
+#include <cmath>
+#include "Sim.hpp"
+#include "WorldConfig.hpp"
+#include "WorldState.hpp"
+#include "Track.hpp"
 
 namespace Judgment {
 
@@ -21,11 +24,6 @@ double averagePuckDistanceToGoal(std::shared_ptr<WorldState> worldState, double 
 }
 
 void judgeTrack(std::shared_ptr<Track> track, int robotIndex, std::shared_ptr<WorldState> worldState) {
-
-    // If the track is re-generated any time, then there's no need for any
-    // initialization here.
-    // track->score = 0;
-
     // Reset the number of collisions.  The actual world state that worldState
     // was copied from has its own history of collisions, but we want to judge
     // the track as if it were the first time the robot has moved along it.  
@@ -34,27 +32,23 @@ void judgeTrack(std::shared_ptr<Track> track, int robotIndex, std::shared_ptr<Wo
     double beforeDistance = averagePuckDistanceToGoal(worldState, config.puckGoalX, config.puckGoalY);
 
     // Move the robot at robotIndex along the track.
-    for (int i = 1; i < track->points.size(); ++i) {
-        worldState->robots[robotIndex].x = track->points[i].x;
-        worldState->robots[robotIndex].y = track->points[i].y;
-        worldState->robots[robotIndex].theta = std::atan2(track->points[i].y - track->points[i - 1].y, track->points[i].x - track->points[i - 1].x);
+    for (int i = 0; i < track->poses.size(); ++i) {
+        worldState->robots[robotIndex].x = track->poses[i].x;
+        worldState->robots[robotIndex].y = track->poses[i].y;
+        //worldState->robots[robotIndex].theta = std::atan2(track->points[i].y - track->points[i - 1].y, track->points[i].x - track->points[i - 1].x);
+        worldState->robots[robotIndex].theta = track->poses[i].theta;
 
         // Call sim update
         Sim::update(worldState);
-
-        // track->score -= worldState->robots[robotIndex].nCollisions;
     }
 
     double afterDistance = averagePuckDistanceToGoal(worldState, config.puckGoalX, config.puckGoalY);
 
     if (worldState->nRobotRobotCollisions == 0 && worldState->nRobotBoundaryCollisions == 0) {
-        track->score += beforeDistance - afterDistance;
+        track->score = track->baseScore + (beforeDistance - afterDistance) / track->poses.size();
     } else {
         track->score = -1;
     }
-
-    // Normalize the score by the number of points on the track.
-    // track->score /= track->points.size();
 }
 
 }; // namespace Judgment

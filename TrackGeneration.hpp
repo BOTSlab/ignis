@@ -1,24 +1,21 @@
 #pragma once
-#include "Track.hpp"
 #include "WorldConfig.hpp"
+#include "Track.hpp"
+#include "Judgment.hpp"
 #include <assert.h>
 //#include "rapidcsv.h"
 
 namespace TrackGeneration {
-
-const double maxTrackLength = 500;
-const double deltaAlpha = 0.05;
-const double numberSamplesForStraightLine = 50;
 
 std::shared_ptr<Track> arcTrack(double startX, double startY, double startTheta, double radius) {
 
     if (radius == 0) {
         // If the radius is 0, then we are generating a straight line.
         auto track = std::make_shared<Track>();
-        for (double t = 0; t < maxTrackLength; t += maxTrackLength / numberSamplesForStraightLine) {
+        for (double t = config.sampleSpacing; t < config.maxTrackLength; t += config.sampleSpacing) {
             double x = startX + t * cos(startTheta);
             double y = startY + t * sin(startTheta);
-            track->points.push_back({x, y});
+            track->poses.push_back({x, y, startTheta});
         }
         return track;
     }
@@ -30,29 +27,74 @@ std::shared_ptr<Track> arcTrack(double startX, double startY, double startTheta,
     radius = fabs(radius);
 
     auto track = std::make_shared<Track>();
-    track->points.push_back({startX, startY});
+//    track->points.push_back({startX, startY});
 
     // Sample along the arc until we reach the maximum arc length.
-    double x, y, arcLength = 0;
-    for (double alpha = 0; arcLength < maxTrackLength && alpha <= M_PI; alpha += deltaAlpha) {
+    double x, y, theta;
+    for (double arcLength = config.sampleSpacing; arcLength < config.maxTrackLength; arcLength += config.sampleSpacing) {
+
+        double alpha = arcLength / radius;
+        if (alpha > M_PI)
+            break;
 
         if (left) {
             x = startX + radius * (cos(startTheta + M_PI/2.0) + cos(startTheta - M_PI/2.0 + alpha));
             y = startY + radius * (sin(startTheta + M_PI/2.0) + sin(startTheta - M_PI/2.0 + alpha));
+            theta = startTheta + alpha;
         } else {
             x = startX + radius * (cos(startTheta - M_PI/2.0) + cos(startTheta + M_PI/2.0 - alpha));
             y = startY + radius * (sin(startTheta - M_PI/2.0) + sin(startTheta + M_PI/2.0 - alpha));
+            theta = startTheta - alpha;
         }
-        track->points.push_back({x, y});
-
-        arcLength += radius * deltaAlpha;
+        track->poses.push_back({x, y, theta});
     }
 
     // Assign the track a base score based on the turning radius.
-    track->score = - 1.0 / radius;
+    track->baseScore = - 1.0 / radius;
 
     return track;
 }
+
+void generateTracksForRobot(int robotIndex, std::shared_ptr<VectorOfTrackVectors> robotIndexToTracks, std::shared_ptr<VectorOfPlans> robotIndexToPlans, std::shared_ptr<WorldState> worldState)
+{
+    auto lastPointInPlan = (*robotIndexToPlans)[robotIndex].poses.back();
+    double x = lastPointInPlan.x;
+    double y = lastPointInPlan.y;
+    double theta = lastPointInPlan.theta;
+
+    double maxTurningRadius = 250;
+    for (int j = 0; j < config.numberOfTracks; ++j)
+    {
+
+        double turningRadius = -maxTurningRadius + 2 * maxTurningRadius * j / (config.numberOfTracks - 1);
+        // std::cout << "turningRadius: " << turningRadius << std::endl;
+
+        std::shared_ptr<Track> track = TrackGeneration::arcTrack(x, y, theta, turningRadius);
+        track->turningRadius = turningRadius;
+
+        // Judge the track using a copy of the world state.
+        auto worldStateToJudge = std::make_shared<WorldState>(*worldState);
+        Judgment::judgeTrack(track, robotIndex, worldStateToJudge);
+
+        (*robotIndexToTracks)[robotIndex].push_back(*track); // BAD: This is a copy of the track, not a shared pointer.
+    }
+}
+
+// Generate all tracks for all robots using the current world state and the
+// final poses of the robots contained in the plan.
+/*
+std::shared_ptr<VectorOfTrackVectors> generateAllTracks(std::shared_ptr<WorldState> worldState,
+                                                        std::shared_ptr<VectorOfPlans> robotIndexToPlans)
+{
+    auto robotIndexToTracks = std::make_shared<VectorOfTrackVectors>();
+
+    for (int i = 0; i < config.numberOfRobots; ++i) {
+        generateTracksForRobot(i, robotIndexToTracks, robotIndexToPlans, worldState);
+    }
+
+    return robotIndexToTracks;
+}
+*/
 
 /*
 const double delta_t = 0.01;

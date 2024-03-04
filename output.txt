@@ -1,0 +1,12 @@
+Updating plan for robot 0
+baseScore: -0.016
+score: 0.118577
+turningRadius: 62.5
+618.338 254.406 2.17341
+612.036 262.157 2.33341
+Updating plan for robot 1
+baseScore: -0.016
+score: -0.149133
+turningRadius: -62.5
+223.462 285.251 -0.280596
+232.809 281.727 -0.440596
