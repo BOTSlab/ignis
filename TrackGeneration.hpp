@@ -2,7 +2,6 @@
 #include "WorldConfig.hpp"
 #include "Track.hpp"
 #include "Judgment.hpp"
-#include <assert.h>
 //#include "rapidcsv.h"
 
 namespace TrackGeneration {
@@ -74,7 +73,7 @@ void generateTracksForRobot(int robotIndex, std::shared_ptr<VectorOfTrackVectors
 
         // Judge the track using a copy of the world state.
         auto worldStateToJudge = std::make_shared<WorldState>(*worldState);
-        Judgment::judgeTrack(track, robotIndex, worldStateToJudge);
+        Judgment::judgeTrack(*track, robotIndex, worldStateToJudge);
 
         (*robotIndexToTracks)[robotIndex].push_back(*track); // BAD: This is a copy of the track, not a shared pointer.
     }

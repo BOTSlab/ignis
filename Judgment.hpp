@@ -23,7 +23,8 @@ double averagePuckDistanceToGoal(std::shared_ptr<WorldState> worldState, double 
     return averageDistance;
 }
 
-void judgeTrack(std::shared_ptr<Track> track, int robotIndex, std::shared_ptr<WorldState> worldState) {
+//void judgeTrack(std::shared_ptr<Track> track, int robotIndex, std::shared_ptr<WorldState> worldState) {
+void judgeTrack(Track& track, int robotIndex, std::shared_ptr<WorldState> worldState) {
     // Reset the number of collisions.  The actual world state that worldState
     // was copied from has its own history of collisions, but we want to judge
     // the track as if it were the first time the robot has moved along it.  
@@ -32,11 +33,11 @@ void judgeTrack(std::shared_ptr<Track> track, int robotIndex, std::shared_ptr<Wo
     double beforeDistance = averagePuckDistanceToGoal(worldState, config.puckGoalX, config.puckGoalY);
 
     // Move the robot at robotIndex along the track.
-    for (int i = 0; i < track->poses.size(); ++i) {
-        worldState->robots[robotIndex].x = track->poses[i].x;
-        worldState->robots[robotIndex].y = track->poses[i].y;
+    for (int i = 0; i < track.poses.size(); ++i) {
+        worldState->robots[robotIndex].x = track.poses[i].x;
+        worldState->robots[robotIndex].y = track.poses[i].y;
         //worldState->robots[robotIndex].theta = std::atan2(track->points[i].y - track->points[i - 1].y, track->points[i].x - track->points[i - 1].x);
-        worldState->robots[robotIndex].theta = track->poses[i].theta;
+        worldState->robots[robotIndex].theta = track.poses[i].theta;
 
         // Call sim update
         Sim::update(worldState);
@@ -45,9 +46,10 @@ void judgeTrack(std::shared_ptr<Track> track, int robotIndex, std::shared_ptr<Wo
     double afterDistance = averagePuckDistanceToGoal(worldState, config.puckGoalX, config.puckGoalY);
 
     if (worldState->nRobotRobotCollisions == 0 && worldState->nRobotBoundaryCollisions == 0) {
-        track->score = track->baseScore + (beforeDistance - afterDistance) / track->poses.size();
+        //track.score = track.baseScore + (beforeDistance - afterDistance) / track.poses.size();
+        track.score = (beforeDistance - afterDistance) / track.poses.size();
     } else {
-        track->score = -1;
+        track.score = -1;
     }
 }
 

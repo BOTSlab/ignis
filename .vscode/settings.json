@@ -76,6 +76,13 @@
         "utility": "cpp",
         "format": "cpp",
         "stop_token": "cpp",
-        "cinttypes": "cpp"
+        "cinttypes": "cpp",
+        "codecvt": "cpp",
+        "deque": "cpp",
+        "forward_list": "cpp",
+        "queue": "cpp",
+        "source_location": "cpp",
+        "stack": "cpp",
+        "valarray": "cpp"
     }
 }

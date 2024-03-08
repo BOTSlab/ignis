@@ -21,18 +21,22 @@
 #include <GLFW/glfw3.h> // Will drag system OpenGL headers
 
 #include "Ignis.hpp"
+#include "CommonTypes.hpp"
+
+using namespace CommonTypes;
 
 // Global variables.
-bool paused = true;
-bool stepOnce = true;
+bool doReset = false;
+bool paused = false;
+bool stepOnce = false;
 int selectedRobotIndex = -1;
 
-static void glfw_error_callback(int error, const char* description)
+static void glfw_error_callback(int error, const char *description)
 {
     fprintf(stderr, "GLFW Error %d: %s\n", error, description);
 }
 
-void plotInteraction(int nr, double *robotXs, double *robotYs, double scaleFactor, WorldConfig &config, std::__1::shared_ptr<WorldState> &worldState)
+void plotInteraction(double scaleFactor, WorldConfig &config, std::__1::shared_ptr<WorldState> &worldState)
 {
     if (ImPlot::IsPlotHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Left))
     {
@@ -43,10 +47,10 @@ void plotInteraction(int nr, double *robotXs, double *robotYs, double scaleFacto
 
         // Check if the mouse click is within the robot scatter plot
         selectedRobotIndex = -1;
-        for (int i = 0; i < nr; ++i)
+        for (int i = 0; i < worldState->robots.size(); ++i)
         {
-            double robotX = robotXs[i];
-            double robotY = robotYs[i];
+            double robotX = worldState->robots[i].x;
+            double robotY = worldState->robots[i].y;
             double distance = sqrt((mouseX - robotX) * (mouseX - robotX) + (mouseY - robotY) * (mouseY - robotY));
 
             // If the mouse click is within the robot, set the selectedRobotIndex to the current robot index
@@ -63,7 +67,9 @@ void plotInteraction(int nr, double *robotXs, double *robotYs, double scaleFacto
     {
         ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.25f);
         ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 1.1 * scaleFactor * config.robotRadius, ImPlot::GetColormapColor(1), IMPLOT_AUTO, ImPlot::GetColormapColor(1));
-        ImPlot::PlotScatter("Selected Robot", &robotXs[selectedRobotIndex], &robotYs[selectedRobotIndex], 1);
+        double robotX = worldState->robots[selectedRobotIndex].x;
+        double robotY = worldState->robots[selectedRobotIndex].y;
+        ImPlot::PlotScatter("Selected Robot", &robotX, &robotY, 1);
 
         // The selected robot will be manually controlled, with zero speed by default.
         worldState->robots[selectedRobotIndex].controlInput.forwardSpeed = 0;
@@ -88,25 +94,126 @@ void plotInteraction(int nr, double *robotXs, double *robotYs, double scaleFacto
     }
 }
 
+void perRobotPlots(size_t robotIndex, const Ignis &ignis, double scaleFactor)
+{
+    auto worldState = ignis.simWorldState;
+    auto config = ignis.config;
+    double noseRadius = 0.1 * config.robotRadius;
+    auto color = ImPlot::GetColormapColor(robotIndex + 2);
 
-void plotWorldState(const char* title, const Ignis& ignis)
+    auto &robot = worldState->robots[robotIndex];
+
+    ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.25f);
+    ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, scaleFactor * config.robotRadius, color, IMPLOT_AUTO, color);
+    std::ostringstream oss;
+    oss << "Robot " << robotIndex;
+    std::string robotString = oss.str();
+    ImPlot::PlotScatter(robotString.c_str(), &robot.x, &robot.y, 1);
+
+    double noseX = robot.x + (config.robotRadius - noseRadius) * cos(robot.theta);
+    double noseY = robot.y + (config.robotRadius - noseRadius) * sin(robot.theta);
+    ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, scaleFactor * noseRadius, color, IMPLOT_AUTO, color);
+    ImPlot::PlotScatter(robotString.c_str(), &noseX, &noseY, 1);
+    ImPlot::PopStyleVar();
+
+    /*
+    ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 1, ImPlot::GetColormapColor(4), IMPLOT_AUTO, ImPlot::GetColormapColor(4));
+    ImPlot::PlotScatter("Tracks", allTrackXs, allTrackYs, nPointsInAllTracks);
+
+    ImPlot::SetNextMarkerStyle(ImPlotMarker_Asterisk, 3, ImPlot::GetColormapColor(5), IMPLOT_AUTO, ImPlot::GetColormapColor(5));
+    ImPlot::PlotScatter("Best Track", bestTrackXs, bestTrackYs, nPointsInBestTracks);
+
+    ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 1, ImPlot::GetColormapColor(6), IMPLOT_AUTO, ImPlot::GetColormapColor(6));
+    ImPlot::PlotScatter("Plan", planXs, planYs, nPointsInAllPlans);
+    */
+
+    /*
+    for (int i = 0; i < nr; ++i) {
+        for (auto& track : robotIndexToTracks->at(i)) {
+            std::ostringstream oss;
+            oss << track.score;
+            ImPlot::PlotText(oss.str().c_str(), track.poses.back().x, track.poses.back().y);
+        }
+    }
+    */
+
+    if (ignis.robotIndexToDilatedPolygonsMap.count(robotIndex) > 0) {
+        const auto &dilatedPolygons = ignis.robotIndexToDilatedPolygonsMap.at(robotIndex);
+        for (const Voronoi::DilatedPolygon &dilatedPolygon : dilatedPolygons)
+        {
+            std::vector<double> polygonXs;
+            std::vector<double> polygonYs;
+            for (const Vertex &vertex : dilatedPolygon.vertices)
+            {
+                polygonXs.push_back(vertex.x);
+                polygonYs.push_back(vertex.y);
+            }
+            // std::ostringstream oss;
+            // oss << dilatedPolygon.dilation;
+            // ImPlot::PlotLine(oss.str().c_str(), polygonXs.data(), polygonYs.data(), polygonXs.size());
+            if (dilatedPolygon.dilation == 0)
+                ImPlot::PlotLine(robotString.c_str(), polygonXs.data(), polygonYs.data(), polygonXs.size(), ImPlotLineFlags_Loop);
+            else
+                ImPlot::PlotLine(robotString.c_str(), polygonXs.data(), polygonYs.data(), polygonXs.size(), ImPlotLineFlags_Loop);
+        }
+    }
+
+    if (ignis.robotIndexToSkeletonsMap.count(robotIndex) > 0) {
+        auto &skeletons = ignis.robotIndexToSkeletonsMap.at(robotIndex);
+        for (const Voronoi::Skeleton &skeleton : skeletons)
+        {
+            ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 4, color, IMPLOT_AUTO, color);
+            ImPlot::PlotScatter(robotString.c_str(), &skeleton.middle.x, &skeleton.middle.y, 1);
+            ImPlot::SetNextMarkerStyle(ImPlotMarker_Square, 6, color, IMPLOT_AUTO, color);
+            ImPlot::PlotScatter(robotString.c_str(), &skeleton.end.x, &skeleton.end.y, 1);
+        }
+    }
+
+    if (ignis.robotIndexToCurvesMap.count(robotIndex) > 0) {
+
+        const auto &curves = ignis.robotIndexToCurvesMap.at(robotIndex);
+        for (const Track &curve : curves)
+        {
+            std::vector<double> curveXs;
+            std::vector<double> curveYs;
+            for (const Pose &pose : curve.poses)
+            {
+                curveXs.push_back(pose.x);
+                curveYs.push_back(pose.y);
+            }
+            ImPlot::PlotLine(robotString.c_str(), curveXs.data(), curveYs.data(), curveXs.size());
+
+            std::ostringstream oss;
+            oss << curve.score;
+            ImPlot::PlotText(oss.str().c_str(), curveXs.back(), curveYs.back());
+        }
+    }
+
+    if (ignis.robotIndexToBestCurveMap.count(robotIndex) > 0) {
+
+        std::vector<double> curveXs;
+        std::vector<double> curveYs;
+        const Track &bestCurve = ignis.robotIndexToBestCurveMap.at(robotIndex);
+        for (const Pose &pose : bestCurve.poses)
+        {
+            curveXs.push_back(pose.x);
+            curveYs.push_back(pose.y);
+        }
+        ImPlot::PlotLine("Best Curves", curveXs.data(), curveYs.data(), curveXs.size());
+    }
+
+}
+
+void plotWorldState(const char *title, const Ignis &ignis)
 {
     auto worldState = ignis.simWorldState;
     auto config = ignis.config;
     double noseRadius = 0.1 * config.robotRadius;
 
-    // Get the puck x- and y-coordinates as required for implot
-    int np = worldState->pucks.size();
-    double* puckXs = new double[np];
-    double* puckYs = new double[np];
-    for (int i = 0; i < np; ++i) {
-        puckXs[i] = worldState->pucks[i].x;
-        puckYs[i] = worldState->pucks[i].y;
-    }
-
     // As above, but for robots.  Also get coordinates for the "noses" of the
     // robots, which are the points at the front of the robot, and are used to
     // draw the direction of the robot.
+    /*
     int nr = worldState->robots.size();
     double* robotXs = new double[nr];
     double* robotYs = new double[nr];
@@ -121,10 +228,12 @@ void plotWorldState(const char* title, const Ignis& ignis)
         robotNoseXs[i] = x + (config.robotRadius - noseRadius) * cos(theta);
         robotNoseYs[i] = y + (config.robotRadius - noseRadius) * sin(theta);
     }
+    */
 
     // Now get the x- and y-coordinates for the tracks.  First figure out how
     // many total points are there for all robots.  We are going to plot the
     // tracks for all robots together.
+    /*
     auto robotIndexToTracks = ignis.robotIndexToTracks;
     int nPointsInAllTracks = 0;
     int nPointsInBestTracks = 0;
@@ -173,15 +282,16 @@ void plotWorldState(const char* title, const Ignis& ignis)
             planIndex++;
         }
     }
+    */
 
-    double boundaryXs[] = { 0, static_cast<double>(config.width), static_cast<double>(config.width), 0 };
-    double boundaryYs[] = { 0, 0, static_cast<double>(config.height), static_cast<double>(config.height) };
+    double boundaryXs[] = {0, static_cast<double>(config.width), static_cast<double>(config.width), 0};
+    double boundaryYs[] = {0, 0, static_cast<double>(config.height), static_cast<double>(config.height)};
 
     ImGui::Begin(title);
     double buffer = 100;
     ImPlot::SetNextAxesLimits(-buffer, config.width + buffer, -buffer, config.height + buffer);
-    if (ImPlot::BeginPlot(title, ImVec2(config.width, config.height), ImPlotFlags_::ImPlotFlags_Equal | ImPlotFlags_::ImPlotFlags_NoTitle)) {
-
+    if (ImPlot::BeginPlot(title, ImVec2(config.width, config.height), ImPlotFlags_::ImPlotFlags_Equal | ImPlotFlags_::ImPlotFlags_NoTitle))
+    {
         ImPlot::SetupLegend(ImPlotLocation_South, ImPlotLegendFlags_Outside);
 
         // Draw the boundaries of the world.
@@ -192,51 +302,38 @@ void plotWorldState(const char* title, const Ignis& ignis)
         ImPlotRect plotRect = ImPlot::GetPlotLimits();
         double scaleFactor = plotSizeInPixels.x / (plotRect.X.Max - plotRect.X.Min);
 
-        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, scaleFactor * config.puckRadius, ImPlot::GetColormapColor(0), IMPLOT_AUTO, ImPlot::GetColormapColor(0));
-        ImPlot::PlotScatter("Pucks", puckXs, puckYs, np);
-
-        ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.25f);
-        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, scaleFactor * config.robotRadius, ImPlot::GetColormapColor(1), IMPLOT_AUTO, ImPlot::GetColormapColor(1));
-        ImPlot::PlotScatter("Robots", robotXs, robotYs, nr);
-
-        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, scaleFactor * noseRadius, ImPlot::GetColormapColor(2), IMPLOT_AUTO, ImPlot::GetColormapColor(2));
-        ImPlot::PlotScatter("Robot Orientations", robotNoseXs, robotNoseYs, nr);
-        ImPlot::PopStyleVar();
-
-        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 1, ImPlot::GetColormapColor(4), IMPLOT_AUTO, ImPlot::GetColormapColor(4));
-        ImPlot::PlotScatter("Tracks", allTrackXs, allTrackYs, nPointsInAllTracks);
-
-        ImPlot::SetNextMarkerStyle(ImPlotMarker_Asterisk, 3, ImPlot::GetColormapColor(5), IMPLOT_AUTO, ImPlot::GetColormapColor(5));
-        ImPlot::PlotScatter("Best Track", bestTrackXs, bestTrackYs, nPointsInBestTracks);
-
-        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 1, ImPlot::GetColormapColor(6), IMPLOT_AUTO, ImPlot::GetColormapColor(6));
-        ImPlot::PlotScatter("Plan", planXs, planYs, nPointsInAllPlans);
-
-
-        for (int i = 0; i < nr; ++i) {
-            for (auto& track : robotIndexToTracks->at(i)) {
-                std::ostringstream oss;
-                oss << track.score;
-                ImPlot::PlotText(oss.str().c_str(), track.poses.back().x, track.poses.back().y);
-            }
+        std::vector<double> puckXs, puckYs;
+        for (int i = 0; i < worldState->pucks.size(); ++i)
+        {
+            puckXs.push_back(worldState->pucks[i].x);
+            puckYs.push_back(worldState->pucks[i].y);
         }
+        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, scaleFactor * config.puckRadius, ImPlot::GetColormapColor(1), IMPLOT_AUTO, ImPlot::GetColormapColor(1));
+        ImPlot::PlotScatter("Pucks", puckXs.data(), puckYs.data(), puckXs.size());
 
-        plotInteraction(nr, robotXs, robotYs, scaleFactor, config, worldState);
+        for (int i = 0; i < worldState->robots.size(); ++i)
+            perRobotPlots(i, ignis, scaleFactor);
+
+        plotInteraction(scaleFactor, config, worldState);
 
         ImPlot::EndPlot();
     }
     ImGui::End();
 
-    delete [] puckXs;
-    delete [] puckYs;
+    //    delete [] puckXs;
+    //    delete [] puckYs;
+    /*
     delete [] robotXs;
     delete [] robotYs;
     delete [] robotNoseXs;
     delete [] robotNoseYs;
+    */
+    /*
     delete [] allTrackXs;
     delete [] allTrackYs;
     delete [] planXs;
     delete [] planYs;
+    */
 }
 
 void handleControlsWindow(Ignis &ignis, ImGuiIO &io)
@@ -247,7 +344,7 @@ void handleControlsWindow(Ignis &ignis, ImGuiIO &io)
     ImGui::Begin("Controls");
 
     if (ImGui::Button("Reset"))
-        ignis.reset();
+        doReset = true;
 
     if (!paused && ImGui::Button("Pause"))
         paused = true;
@@ -258,14 +355,14 @@ void handleControlsWindow(Ignis &ignis, ImGuiIO &io)
     if (paused && ImGui::Button("Step"))
         stepOnce = true;
 
-    //ImGui::SameLine();
+    // ImGui::SameLine();
 
     ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
     ImGui::End();
 }
 
 // Main code
-int main(int, char**)
+int main(int, char **)
 {
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit())
@@ -274,20 +371,20 @@ int main(int, char**)
         // Decide GL+GLSL versions
 #if defined(IMGUI_IMPL_OPENGL_ES2)
     // GL ES 2.0 + GLSL 100
-    const char* glsl_version = "#version 100";
+    const char *glsl_version = "#version 100";
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
     glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
 #elif defined(__APPLE__)
     // GL 3.2 + GLSL 150
-    const char* glsl_version = "#version 150";
+    const char *glsl_version = "#version 150";
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // 3.2+ only
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // Required on Mac
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);           // Required on Mac
 #else
     // GL 3.0 + GLSL 130
-    const char* glsl_version = "#version 130";
+    const char *glsl_version = "#version 130";
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
     // glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
@@ -295,7 +392,7 @@ int main(int, char**)
 #endif
 
     // Create window with graphics context
-    GLFWwindow* window = glfwCreateWindow(1280, 720, "Ignis", nullptr, nullptr);
+    GLFWwindow *window = glfwCreateWindow(1280, 720, "Ignis", nullptr, nullptr);
     if (window == nullptr)
         return 1;
     glfwMakeContextCurrent(window);
@@ -305,10 +402,10 @@ int main(int, char**)
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImPlot::CreateContext();
-    ImGuiIO& io = ImGui::GetIO();
+    ImGuiIO &io = ImGui::GetIO();
     (void)io;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad; // Enable Gamepad Controls
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;  // Enable Gamepad Controls
 
     // Setup Dear ImGui style
     ImGui::StyleColorsDark();
@@ -321,9 +418,12 @@ int main(int, char**)
     Ignis ignis;
 
     // Main loop
-    while (!glfwWindowShouldClose(window)) {
-        if (!paused || stepOnce) {
-            ignis.step();
+    while (!glfwWindowShouldClose(window))
+    {
+        if (!paused || stepOnce)
+        {
+            ignis.step(doReset);
+            doReset = false;
             stepOnce = false;
         }
 

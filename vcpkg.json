@@ -1,6 +1,6 @@
 {
   "dependencies": [
-    "fmt",
+    "geos",
     {
       "name": "imgui",
       "features": [
@@ -10,6 +10,13 @@
     },
     "implot",
     "opengl",
-    "rapidcsv"
+    "tinyspline"
+  ],
+  "overrides": [
+    {
+      "name": "geos",
+      "version": "3.11.3",
+      "port-version": 1
+    }
   ]
 }
