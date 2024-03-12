@@ -1,6 +1,6 @@
 #pragma once
 #include <map>
-#include "tinysplinecxx.h"
+//#include "tinysplinecxx.h"
 #include "CommonTypes.hpp"
 #include "WorldConfig.hpp"
 #include "Voronoi.hpp"
@@ -21,85 +21,102 @@ using MapOfVectorOfCurves = std::map<size_t, std::vector<Track>>;
 
 double artificialPointDistance = 1.5 * config.robotRadius;
 
-MapOfVectorOfCurves curvesFromSkeletons(Voronoi::MapOfVectorOfSkeletons robotIndexToSkeletonsMap)
+std::vector<Track> curvesFromDilatedPolygons(std::vector<Voronoi::DilatedPolygon> polygons)
 {
-    MapOfVectorOfCurves curvesMap;
-
-    for (const auto &pair : robotIndexToSkeletonsMap)
+    std::vector<Track> curves;
+    for (const Voronoi::DilatedPolygon &polygon : polygons)
     {
-        size_t robotIndex = pair.first;
-        const auto &skeletons = pair.second;
+        Track curve;
 
-        std::vector<Track> curves;
-        for (const Voronoi::Skeleton &skeleton : skeletons)
-        {
-            Track curve;
-
-            // The skeleton contains the start, middle, and end points, but we
-            // will augment this with an artificial point located a fixed distance
-            // ahead of the robot.
-            double artificialX = skeleton.begin.x + artificialPointDistance * cos(skeleton.begin.theta);
-            double artificialY = skeleton.begin.y + artificialPointDistance * sin(skeleton.begin.theta);
-
-            std::vector<tinyspline::real> controlPoints = {
-                skeleton.begin.x, skeleton.begin.y, // Start point
-                artificialX, artificialY,
-                skeleton.middle.x, skeleton.middle.y, // Control point
-                skeleton.end.x, skeleton.end.y // End point
-            };
-
-            // Use the points to create a cubic natural spline
-            //tinyspline::BSpline spline = tinyspline::BSpline::interpolateCubicNatural(controlPoints, 2);
-            tinyspline::BSpline spline = tinyspline::BSpline::interpolateCatmullRom(controlPoints, 2);
-
-            // Generate curve vertices
-            for (float u = 0; u <= 1; u += 0.01f) {
-                auto position = spline.eval(u).resultVec2();
-                auto derivative = spline.derive().eval(u).resultVec2();
-
-                curve.poses.push_back({position.x(), position.y(), std::atan2(derivative.y(), derivative.x())});
+        double lastX, lastY;
+        bool lastValid = false;
+        for (const auto &pt : polygon.vertices) {
+            double x = pt.x;
+            double y = pt.x;
+            if (lastValid) {
+                double dx = pt.x - lastX;
+                double dy = pt.y - lastY;
+                double theta = std::atan2(dy, dx);
+                curve.poses.push_back({x, y, theta});
             }
-
-            curves.push_back(curve);
+            lastX = x;
+            lastY = y;
+            lastValid = true;
         }
-        curvesMap.emplace(robotIndex, curves);
+
+        curves.push_back(curve);
     }
 
-    return curvesMap;
+    return curves;
 }
 
-// Judges all curves in curvesMap and also returns the best curve for each robot.
-CurveGeneration::MapOfCurves judgeCurves(MapOfVectorOfCurves curvesMap, std::shared_ptr<WorldState> worldState)
+/*
+std::vector<Track> splineCurvesFromSkeletons(std::vector<Voronoi::Skeleton> skeletons)
 {
-    MapOfCurves bestCurves;
+    std::vector<Track> curves;
+    for (const Voronoi::Skeleton &skeleton : skeletons)
+    {
+        Track curve;
 
-    for (auto& pair : curvesMap) {
-        size_t robotIndex = pair.first;
-        auto& tracks = pair.second;
+        std::vector<tinyspline::real> controlPoints = {
+            skeleton.beginningPose.x, skeleton.beginningPose.y
+        };
 
-        // Judge all tracks.
-        for (auto& track : tracks) {
-            // Judge the track using a copy of the world state.
-            auto worldStateToJudge = std::make_shared<WorldState>(*worldState);
-            Judgment::judgeTrack(track, robotIndex, worldStateToJudge);
+        // Augment the skeleton with an artificial point located a fixed distance
+        // ahead of the robot.
+        //double artificialX = skeleton.beginningPose.x + artificialPointDistance * cos(skeleton.beginningPose.theta);
+        //double artificialY = skeleton.beginningPose.y + artificialPointDistance * sin(skeleton.beginningPose.theta);
+        //controlPoints.push_back(artificialX);
+        //controlPoints.push_back(artificialY);
+
+        for (int i=0; i<skeleton.vertices.size(); i++)
+        {
+            auto a = skeleton.vertices[i];
+            controlPoints.push_back(a.x);
+            controlPoints.push_back(a.y);
         }
 
-        // Now find the best track for this robot.
-        double maxScore = -1;
-        Track* bestTrack = nullptr;
-        for (auto& track : tracks) {
-            if (track.score > maxScore) {
-                maxScore = track.score;
-                bestTrack = &track;
-            }
+        // Use the points to create a cubic natural spline
+        //tinyspline::BSpline spline = tinyspline::BSpline::interpolateCubicNatural(controlPoints, 2);
+        tinyspline::BSpline spline = tinyspline::BSpline::interpolateCatmullRom(controlPoints, 2).toBeziers();
+
+        // Generate curve vertices
+        for (float u = 0; u <= 1; u += 0.01f) {
+            auto position = spline.eval(u).resultVec2();
+            auto derivative = spline.derive().eval(u).resultVec2();
+
+            curve.poses.push_back({position.x(), position.y(), std::atan2(derivative.y(), derivative.x())});
         }
 
-        if (bestTrack != nullptr) {
-            bestCurves.emplace(robotIndex, *bestTrack);
-        }
+        curves.push_back(curve);
     }
 
-    return bestCurves;
+    return curves;
+}
+*/
+
+// Judges all curves in curvesMap and also returns the best curve for each robot.
+Track judgeCurves(int robotIndex, std::vector<Track> &tracks, std::shared_ptr<WorldState> worldState)
+{
+    // Judge all tracks.
+    for (auto& track : tracks) {
+        // Judge the track using a copy of the world state.
+        auto worldStateToJudge = std::make_shared<WorldState>(*worldState);
+        Judgment::judgeTrack(track, robotIndex, worldStateToJudge);
+    }
+
+    // Now find the best track for this robot.
+    double maxScore = -std::numeric_limits<double>::max();
+    Track* bestTrack = nullptr;
+    for (auto& track : tracks) {
+        if (track.score > maxScore) {
+            maxScore = track.score;
+            bestTrack = &track;
+        }
+    }
+    cout << "bestTrack->score: " << bestTrack->score << endl;
+
+    return *bestTrack;
 }
 
 }; // namespace CurveGeneration

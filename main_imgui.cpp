@@ -23,12 +23,7 @@
 #include "Ignis.hpp"
 #include "CommonTypes.hpp"
 
-using namespace CommonTypes;
-
 // Global variables.
-bool doReset = false;
-bool paused = false;
-bool stepOnce = false;
 int selectedRobotIndex = -1;
 
 static void glfw_error_callback(int error, const char *description)
@@ -143,7 +138,7 @@ void perRobotPlots(size_t robotIndex, const Ignis &ignis, double scaleFactor)
         {
             std::vector<double> polygonXs;
             std::vector<double> polygonYs;
-            for (const Vertex &vertex : dilatedPolygon.vertices)
+            for (const CommonTypes::Vertex &vertex : dilatedPolygon.vertices)
             {
                 polygonXs.push_back(vertex.x);
                 polygonYs.push_back(vertex.y);
@@ -152,22 +147,27 @@ void perRobotPlots(size_t robotIndex, const Ignis &ignis, double scaleFactor)
             // oss << dilatedPolygon.dilation;
             // ImPlot::PlotLine(oss.str().c_str(), polygonXs.data(), polygonYs.data(), polygonXs.size());
             if (dilatedPolygon.dilation == 0)
-                ImPlot::PlotLine(robotString.c_str(), polygonXs.data(), polygonYs.data(), polygonXs.size(), ImPlotLineFlags_Loop);
+                ImPlot::PlotLine("Dilated Polygons", polygonXs.data(), polygonYs.data(), polygonXs.size(), ImPlotLineFlags_Loop);
             else
-                ImPlot::PlotLine(robotString.c_str(), polygonXs.data(), polygonYs.data(), polygonXs.size(), ImPlotLineFlags_Loop);
+                ImPlot::PlotLine("Dilated Polygons", polygonXs.data(), polygonYs.data(), polygonXs.size(), ImPlotLineFlags_Loop);
         }
     }
 
+    /*
     if (ignis.robotIndexToSkeletonsMap.count(robotIndex) > 0) {
         auto &skeletons = ignis.robotIndexToSkeletonsMap.at(robotIndex);
         for (const Voronoi::Skeleton &skeleton : skeletons)
         {
-            ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 4, color, IMPLOT_AUTO, color);
-            ImPlot::PlotScatter(robotString.c_str(), &skeleton.middle.x, &skeleton.middle.y, 1);
-            ImPlot::SetNextMarkerStyle(ImPlotMarker_Square, 6, color, IMPLOT_AUTO, color);
-            ImPlot::PlotScatter(robotString.c_str(), &skeleton.end.x, &skeleton.end.y, 1);
+            int markerSize = 4;
+            for (const CommonTypes::Vertex &vertex : skeleton.vertices)
+            {
+                ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, markerSize, color, IMPLOT_AUTO, color);
+                ImPlot::PlotScatter(robotString.c_str(), &vertex.x, &vertex.y, 1);
+                markerSize += 2;
+            }
         }
     }
+    */
 
     if (ignis.robotIndexToCurvesMap.count(robotIndex) > 0) {
 
@@ -201,7 +201,6 @@ void perRobotPlots(size_t robotIndex, const Ignis &ignis, double scaleFactor)
         }
         ImPlot::PlotLine("Best Curves", curveXs.data(), curveYs.data(), curveXs.size());
     }
-
 }
 
 void plotWorldState(const char *title, const Ignis &ignis)
@@ -344,16 +343,16 @@ void handleControlsWindow(Ignis &ignis, ImGuiIO &io)
     ImGui::Begin("Controls");
 
     if (ImGui::Button("Reset"))
-        doReset = true;
+        ignis.prepareToReset();
 
-    if (!paused && ImGui::Button("Pause"))
-        paused = true;
+    if (!ignis.isPaused() && ImGui::Button("Pause"))
+        ignis.prepareToPause();
 
-    if (paused && ImGui::Button("Play"))
-        paused = false;
+    if (ignis.isPaused() && ImGui::Button("Play"))
+        ignis.prepareToUnpause();
 
-    if (paused && ImGui::Button("Step"))
-        stepOnce = true;
+    if (ignis.isPaused() && ImGui::Button("Step"))
+        ignis.prepareToStepOnce();
 
     // ImGui::SameLine();
 
@@ -420,12 +419,7 @@ int main(int, char **)
     // Main loop
     while (!glfwWindowShouldClose(window))
     {
-        if (!paused || stepOnce)
-        {
-            ignis.step(doReset);
-            doReset = false;
-            stepOnce = false;
-        }
+        ignis.step();
 
         // Poll and handle events (inputs, window resize, etc.)
         // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.

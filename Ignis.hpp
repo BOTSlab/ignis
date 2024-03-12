@@ -13,13 +13,22 @@ public:
     Voronoi::VoronoiBuilder voronoiBuilder;
 
     std::shared_ptr<WorldState> simWorldState;
-    std::shared_ptr<VectorOfTrackVectors> robotIndexToTracks;
-    std::shared_ptr<VectorOfPlans> robotIndexToPlans;
+    //std::shared_ptr<VectorOfTrackVectors> robotIndexToTracks;
+    //std::shared_ptr<VectorOfPlans> robotIndexToPlans;
     Voronoi::MapOfVectorOfDilatedPolygons robotIndexToDilatedPolygonsMap;
-    Voronoi::MapOfVectorOfSkeletons robotIndexToSkeletonsMap;
+    //Voronoi::MapOfVectorOfSkeletons robotIndexToSkeletonsMap;
     CurveGeneration::MapOfVectorOfCurves robotIndexToCurvesMap;
     CurveGeneration::MapOfCurves robotIndexToBestCurveMap;
+
+    // Simulation state variables.
     int stepCount = 0;
+    bool paused = false;
+
+    // These are not state variables, but rather flags that are set externally.
+    bool doReset = false;
+    bool doPause = false;
+    bool doUnpause = false;
+    bool doStepOnce = false;
 
     Ignis()
         : voronoiBuilder(), config()
@@ -27,12 +36,33 @@ public:
         reset();
     }
 
-    void step(bool doReset = false)
+    void step()
     {
-        if (doReset)
+        if (doReset) {
+            doReset = false;
             reset();
+        }
+        if (doPause) {
+            doPause = false;
+            paused = true;
+        }
+        if (doUnpause) {
+            doUnpause = false;
+            paused = false;
+        }
+        if (doStepOnce) {
+            // We set doStepOnce to false and set paused to true at the end of this function.
+            paused = false;
+        }
+
+        if (paused)
+            return;
 
         Sim::update(simWorldState);
+
+        robotIndexToDilatedPolygonsMap.clear();
+        //robotIndexToSkeletonsMap.clear();
+        robotIndexToCurvesMap.clear();
 
         // BAD: The work done by the following functions is for all robots, but
         // we don't need to compute anything for robots that are not close to
@@ -40,12 +70,29 @@ public:
         voronoiBuilder.compute(simWorldState);
         voronoiBuilder.updateRobotSites(simWorldState);
         robotIndexToDilatedPolygonsMap = voronoiBuilder.getMapOfDilatedPolygons();
-        robotIndexToSkeletonsMap = voronoiBuilder.getMapOfSkeletons();
+        //robotIndexToSkeletonsMap = voronoiBuilder.getMapOfSkeletons();
 
         for (int i = 0; i < config.numberOfRobots; ++i)
         {
-            robotIndexToCurvesMap = CurveGeneration::curvesFromSkeletons(robotIndexToSkeletonsMap);
-            robotIndexToBestCurveMap = CurveGeneration::judgeCurves(robotIndexToCurvesMap, simWorldState);
+            auto& bestCurve = robotIndexToBestCurveMap[i];
+            if (!bestCurve.poses.empty())
+            {
+                auto& lastPose = bestCurve.poses.back();
+                double dx = simWorldState->robots[i].x - lastPose.x;
+                double dy = simWorldState->robots[i].y - lastPose.y;
+                double distance = std::sqrt(dx * dx + dy * dy);
+                if (distance > config.robotRadius * 2)
+                    continue;
+            }
+
+            robotIndexToCurvesMap[i] = CurveGeneration::curvesFromDilatedPolygons(robotIndexToDilatedPolygonsMap.at(i));
+            if (robotIndexToCurvesMap[i].empty()) {
+                cout << "Robot " << i << " has no curves to judge." << endl;
+            } else {
+                robotIndexToBestCurveMap[i] = CurveGeneration::judgeCurves(i, robotIndexToCurvesMap.at(i), simWorldState);
+            }
+
+            paused = true;
         }
 
         //arcTrackPlanManagement();
@@ -53,6 +100,36 @@ public:
         Following::updateControlInputs(simWorldState, robotIndexToBestCurveMap);
 
         stepCount++;
+
+        if (doStepOnce) {
+            doStepOnce = false;
+            paused = true;
+        }
+    }
+
+    void prepareToReset()
+    {
+        doReset = true;
+    }
+
+    void prepareToPause()
+    {
+        doPause = true;
+    }
+
+    void prepareToUnpause()
+    {
+        doUnpause = true;
+    }
+
+    void prepareToStepOnce()
+    {
+        doStepOnce = true;
+    }
+
+    bool isPaused() const
+    {
+        return paused;
     }
 
 private:
@@ -111,6 +188,7 @@ private:
     {
         simWorldState = worldInitializer();
 
+        /*
         robotIndexToPlans = std::make_shared<VectorOfPlans>();
         for (int i = 0; i < config.numberOfRobots; ++i) {
             double x = simWorldState->robots[i].x;
@@ -122,8 +200,14 @@ private:
             plan.poses.push_back({x, y, theta});
             robotIndexToPlans->push_back(plan);
         }
+        */
+        robotIndexToDilatedPolygonsMap.clear();
+        //robotIndexToSkeletonsMap.clear();
+        robotIndexToCurvesMap.clear();
+        robotIndexToBestCurveMap.clear();
     }
 
+    /*
     void updatePlan(int robotIndex) 
     {
         //std::cout << "Updating plan for robot " << robotIndex << std::endl;
@@ -152,4 +236,5 @@ private:
 
         //(*robotIndexToPlans)[robotIndex].print();
     }
+    */
 };
