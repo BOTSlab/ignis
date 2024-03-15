@@ -173,26 +173,28 @@ private:
 
                 std::vector<DilatedPolygon> dilatedPolygons;
                 for (auto d : dilations) {
+                    //cout << "Dilation: " << d << endl;
                     DilatedPolygon dilatedPolygon;
                     dilatedPolygon.dilation = d;
 
                     //auto geosDilatedPolygon = clippedPolygon->buffer(d);
                     //unique_ptr<geos::geom::Geometry> geosDilatedPolygon = clippedPolygon->buffer(d)->buffer(-50)->buffer(50);
                     
-                    cout << "BEFORE geosPolygonProcessing" << endl;
+                    //cout << "BEFORE geosPolygonProcessing" << endl;
                     int nPoints = clippedPolygon->getNumPoints();
-                    cout << "clippedPolygon->getNumPoints(): " << nPoints << endl;
+                    //cout << "clippedPolygon->getNumPoints(): " << nPoints << endl;
                     auto geosDilatedPolygon = geosPolygonProcessing(factory, clippedPolygon, d, robotPoint, robot);
                     if (geosDilatedPolygon == nullptr) {
                         continue;
                     }
                     nPoints = geosDilatedPolygon->getNumPoints();
                     cout << "geosDilatedPolygon->getNumPoints(): " << nPoints << endl;
-                    cout << "AFTER geosPolygonProcessing" << endl;
+                    //cout << "AFTER geosPolygonProcessing" << endl;
 
                     // Note that we are not including the last point, which is the same as the first
                     
                     for (int j = 0; j < nPoints - 1; ++j) {
+//if (j > 20) break;
                         auto coord = geosDilatedPolygon->getCoordinates()->getAt(j);
                         dilatedPolygon.vertices.push_back(CommonTypes::Vertex(coord.x, coord.y));
                     }
@@ -201,7 +203,7 @@ private:
                         dilatedPolygons.push_back(dilatedPolygon);
                 }
 
-                // std::cout << "Dilated polygons: " << dilatedPolygons.size() << std::endl;
+                std::cout << "Dilated polygons: " << dilatedPolygons.size() << std::endl;
                 
                 if (!dilatedPolygons.empty()) {
                     mapOfDilatedPolygons.emplace(robotIndex, dilatedPolygons);
@@ -212,12 +214,12 @@ private:
     }
 
     unique_ptr<geos::geom::Geometry> geosPolygonProcessing(GeometryFactory::Ptr &factory, unique_ptr<geos::geom::Geometry> &clippedPolygon, double dilation, geos::geom::Point *robotPoint, Robot &robot) {
-        cout << "geosPolygonProcessing: A" << endl;
-        //auto geosDilatedPolygon = clippedPolygon->buffer(dilation);
-        auto geosDilatedPolygon = clippedPolygon->buffer(dilation)->buffer(-50)->buffer(50);
+        //cout << "geosPolygonProcessing: A" << endl;
+        auto geosDilatedPolygon = clippedPolygon->buffer(dilation);
+        //auto geosDilatedPolygon = clippedPolygon->buffer(dilation)->buffer(-50)->buffer(50);
         if (geosDilatedPolygon->getNumPoints() < 3)
             return nullptr;
-        cout << "geosDilatedPolygon->getNumPoints(): " << geosDilatedPolygon->getNumPoints() << endl;
+        //cout << "geosDilatedPolygon->getNumPoints(): " << geosDilatedPolygon->getNumPoints() << endl;
 
 
         // Define a point ahead of the robot.
@@ -225,25 +227,25 @@ private:
         double aheadX = robot.x + aheadDistance * std::cos(robot.theta);
         double aheadY = robot.y + aheadDistance * std::sin(robot.theta);
         auto aheadPoint = GeometryFactory::getDefaultInstance()->createPoint({aheadX, aheadY});
-        cout << "geosPolygonProcessing: B" << endl;
+        //cout << "geosPolygonProcessing: B" << endl;
 
         // p1 is the closest point on the polygon to the robot's position.
         geos::geom::Point *p1 = findClosestPointOnPolygon(geosDilatedPolygon, robotPoint);
-        cout << "geosPolygonProcessing: C" << endl;
+        //cout << "geosPolygonProcessing: C" << endl;
 
         // p2 is the closest point on the polygon to the point ahead of the robot.
         geos::geom::Point *p2 = findClosestPointOnPolygon(geosDilatedPolygon, aheadPoint);
-        cout << "geosPolygonProcessing: D" << endl;
+        //cout << "geosPolygonProcessing: D" << endl;
 
         // Determine if the robot is inside the polygon.
         bool inside = geosDilatedPolygon->contains(robotPoint);
-        cout << "geosPolygonProcessing: E" << endl;
+        //cout << "geosPolygonProcessing: E" << endl;
 
         if (inside) {
         } else {
             // Create a CoordinateArraySequence using the following points: robotPoint, aheadPoint, p1, p2, and robotPoint.
             
-            cout << "geosPolygonProcessing: F" << endl;
+            //cout << "geosPolygonProcessing: F" << endl;
 
             geos::geom::CoordinateArraySequence *cas = new geos::geom::CoordinateArraySequence();
 
@@ -255,49 +257,11 @@ private:
             cas->add(geos::geom::Coordinate(p1->getCoordinate()->x, p1->getCoordinate()->y));
             cas->add(geos::geom::Coordinate(robotPoint->getCoordinate()->x, robotPoint->getCoordinate()->y));
             auto linearRing = factory->createLinearRing(cas);
-
-            /*
-            std::vector<Coordinate> coordinates;
-            Coordinate r{robotPoint->getCoordinate()->x, robotPoint->getCoordinate()->y};
-            Coordinate a{aheadPoint->getCoordinate()->x, aheadPoint->getCoordinate()->y};
-            Coordinate _p2{p2->getCoordinate()->x, p2->getCoordinate()->y};
-            auto centroid = geosDilatedPolygon->getCentroid();
-            Coordinate _c{centroid->getX(), centroid->getY()};
-            Coordinate _p1{p1->getCoordinate()->x, p1->getCoordinate()->y};
-            coordinates.push_back(r);
-            coordinates.push_back(a);
-            coordinates.push_back(_p2);
-            coordinates.push_back(_c);
-            coordinates.push_back(_p1);
-            coordinates.push_back(r);
-            
-
-            cout << "geosPolygonProcessing: G" << endl;
-            
-            // Create a CoordinateArraySequence from the vector of coordinates
-            auto coordinateSequenceFactory = factory->getCoordinateSequenceFactory();
-            if (coordinateSequenceFactory == nullptr) {
-                cout << "NULL coordinateSequenceFactory" << endl;
-            }
-            geos::geom::CoordinateSequence::Ptr coordSeq = coordinateSequenceFactory->create(coordinates.size(), 2);
-            if (coordSeq == nullptr) {
-                cout << "NULL coordSeq" << endl;
-            }
-            for (int i = 0; i < coordinates.size(); ++i) {
-                coordSeq->setAt(coordinates[i], i);
-                coordSeq->operator[](
-            }
-            cout << "geosPolygonProcessing: H" << endl;
-            
-
-            // Create a LinearRing from the CoordinateArraySequence
-            auto linearRing = factory->createLinearRing(coordSeq);
-            */
             if (linearRing == nullptr) {
                 cout << "NULL linearRing" << endl;
             }
 
-            cout << "geosPolygonProcessing: I" << endl;
+            //cout << "geosPolygonProcessing: I" << endl;
             // Create a Polygon from the LinearRing
             std::unique_ptr<Polygon> polygonPtr(factory->createPolygon(linearRing, nullptr));
             if (polygonPtr == nullptr) {
@@ -309,52 +273,62 @@ private:
                 return nullptr;
             }
 
-            cout << "polygonPtr->getNumPoints(): " << polygonPtr->getNumPoints() << endl;
-            cout << "geosDilatedPolygon->getNumPoints(): " << geosDilatedPolygon->getNumPoints() << endl;
-            cout << "polygonPtr->isValid(): " << polygonPtr->isValid() << endl;
-            cout << "geosDilatedPolygon->isValid(): " << geosDilatedPolygon->isValid() << endl;
+            //cout << "polygonPtr->getNumPoints(): " << polygonPtr->getNumPoints() << endl;
+            //cout << "geosDilatedPolygon->getNumPoints(): " << geosDilatedPolygon->getNumPoints() << endl;
+            //cout << "polygonPtr->isValid(): " << polygonPtr->isValid() << endl;
+            //cout << "geosDilatedPolygon->isValid(): " << geosDilatedPolygon->isValid() << endl;
 
-            cout << "geosPolygonProcessing: J" << endl;
+            //cout << "geosPolygonProcessing: J" << endl;
             // Compute the union of geosDilatedPolygon and polygonPtr
             auto unionPolygon = geosDilatedPolygon->Union(polygonPtr.get());
-            cout << "unionPolygon->getNumPoints(): " << unionPolygon->getNumPoints() << endl;
-            cout << "geosPolygonProcessing: K" << endl;
+            if (unionPolygon == nullptr) {
+                cout << "NULL unionPolygon" << endl;
+                return nullptr;
+            }
+            if (!unionPolygon->isValid()) {
+                cout << "unionPolygon is NOT valid" << endl;
+                return nullptr;
+            }
+            //cout << "unionPolygon->getNumPoints(): " << unionPolygon->getNumPoints() << endl;
+            //cout << "geosPolygonProcessing: K" << endl;
             
-            // return unionPolygon;
+            auto roundedUnionPolygon = unionPolygon->buffer(-10)->buffer(10);
+
+            return roundedUnionPolygon;
         }
-        cout << "geosPolygonProcessing: L" << endl;
+        //cout << "geosPolygonProcessing: L" << endl;
         
         return geosDilatedPolygon;
     }
 
     geos::geom::Point* findClosestPointOnPolygon(unique_ptr<geos::geom::Geometry> &polygon, geos::geom::Point *point) {
-        cout << "findClosestPointOnPolygon START" << endl;
+        //cout << "findClosestPointOnPolygon START" << endl;
         // Find the closest edge of the polygon to the given point.
         auto closestEdgeIndices = findClosestEdgeToPoint(polygon, point);
         CommonTypes::Vertex first = {polygon->getCoordinates()->getAt(closestEdgeIndices.first).x, polygon->getCoordinates()->getAt(closestEdgeIndices.first).y};
         CommonTypes::Vertex second = {polygon->getCoordinates()->getAt(closestEdgeIndices.second).x, polygon->getCoordinates()->getAt(closestEdgeIndices.second).y};
-        cout << "findClosestPointOnPolygon: AA" << endl;
+        //cout << "findClosestPointOnPolygon: AA" << endl;
         
         // We find the projection of the point's position onto the closest edge
         CommonTypes::Vertex pointV = {point->getCoordinates()->getAt(0).x, point->getCoordinates()->getAt(0).y};
         CommonTypes::Vertex a = pointV - first;
         CommonTypes::Vertex b = {second.x - first.x, second.y - first.y};
         CommonTypes::Vertex proj = first + b * (a.dot(b) / b.dot(b));
-        cout << "findClosestPointOnPolygon: BB" << endl;
+        //cout << "findClosestPointOnPolygon: BB" << endl;
 
         // Convert proj into a geos point.
         auto projPoint = GeometryFactory::getDefaultInstance()->createPoint({proj.x, proj.y});
-        cout << "findClosestPointOnPolygon - END" << endl;
+        //cout << "findClosestPointOnPolygon - END" << endl;
 
         return projPoint;
     }
 
     std::pair<size_t, size_t> findClosestEdgeToPoint(unique_ptr<geos::geom::Geometry> &polygon, geos::geom::Point *point)
     {
-        cout << "findClosestEdgeToPoint START" << endl;
+        //cout << "findClosestEdgeToPoint START" << endl;
         std::pair<size_t, size_t> closestEdgeIndices = {-1, -1};
         double minDistance = std::numeric_limits<double>::max();
-        cout << "polygon->getNumPoints(): " << polygon->getNumPoints() << endl;
+        //cout << "polygon->getNumPoints(): " << polygon->getNumPoints() << endl;
         for (int j = 0; j < polygon->getNumPoints(); ++j) {
             auto coord1 = polygon->getCoordinates()->getAt(j);
             auto coord2 = polygon->getCoordinates()->getAt((j + 1) % polygon->getNumPoints());
@@ -368,7 +342,7 @@ private:
         if (closestEdgeIndices.first == -1 || closestEdgeIndices.second == -1) {
             throw std::runtime_error("No closest edge found.");
         }
-        cout << "findClosestEdgeToPoint END" << endl;
+        //cout << "findClosestEdgeToPoint END" << endl;
         return closestEdgeIndices;
     }
 

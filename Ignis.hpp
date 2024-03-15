@@ -86,23 +86,30 @@ public:
                 if (bestCurveExists) {
                     auto& bestCurve = robotIndexToBestCurveMap.at(i);
                     if (!bestCurve.poses.empty()) {
+                        /*
                         // If the robot already has a best curve and has not reached its
                         // end, then we can skip it.
                         skip = true;
                     } else {
+                        */
                         // Skip if the robot is far from the end of its curve.
+                        /*
                         auto& lastPose = bestCurve.poses.back();
                         double dx = simWorldState->robots[i].x - lastPose.x;
                         double dy = simWorldState->robots[i].y - lastPose.y;
                         double distance = std::sqrt(dx * dx + dy * dy);
                         if (distance > config.robotRadius * 2)
                             skip = true;
+                        */
                     }
                 }
             }
-            if (skip)
+            if (skip) {
+                cout << "Skipping robot " << i << endl;
                 continue;
+            }
 
+            cout << "Robot " << i << " is generating curves." << endl;
             robotIndexToCurvesMap[i] = CurveGeneration::curvesFromDilatedPolygons(robotIndexToDilatedPolygonsMap.at(i));
             if (robotIndexToCurvesMap[i].empty()) {
                 cout << "Robot " << i << " has no curves to judge." << endl;

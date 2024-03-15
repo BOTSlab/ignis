@@ -6,9 +6,9 @@ struct WorldConfig
     const int width = 800;
     const int height = 600;
     const int numberOfRobots = 2;
-    const int numberOfPucks = 0;
+    const int numberOfPucks = 10;
     const double robotRadius = 25;
-    const double puckRadius = 50;
+    const double puckRadius = 35;
     const double maxForwardSpeed = 0.1;
     const double maxAngularSpeed = 0.1;
 
@@ -25,5 +25,5 @@ struct WorldConfig
     const int planMaxLength = 5;
 
     // For dilation of Voronoi cells.
-    const double dilationDelta = 10;
+    const double dilationDelta = 50;
 } config;

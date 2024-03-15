@@ -32,7 +32,7 @@ std::vector<Track> curvesFromDilatedPolygons(std::vector<GeosVoronoi::DilatedPol
         bool lastValid = false;
         for (const auto &pt : polygon.vertices) {
             double x = pt.x;
-            double y = pt.x;
+            double y = pt.y;
             if (lastValid) {
                 double dx = pt.x - lastX;
                 double dy = pt.y - lastY;

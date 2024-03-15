@@ -146,7 +146,7 @@ void perRobotPlots(size_t robotIndex, const Ignis &ignis, double scaleFactor)
             // std::ostringstream oss;
             // oss << dilatedPolygon.dilation;
             // ImPlot::PlotLine(oss.str().c_str(), polygonXs.data(), polygonYs.data(), polygonXs.size());
-            ImPlot::PlotLine("Dilated Polygons", polygonXs.data(), polygonYs.data(), polygonXs.size(), ImPlotLineFlags_Loop);
+            ImPlot::PlotLine("Dilated Polygons", polygonXs.data(), polygonYs.data(), polygonXs.size()/*, ImPlotLineFlags_Loop*/);
         }
     }
 
