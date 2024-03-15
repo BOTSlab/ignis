@@ -134,7 +134,7 @@ void perRobotPlots(size_t robotIndex, const Ignis &ignis, double scaleFactor)
 
     if (ignis.robotIndexToDilatedPolygonsMap.count(robotIndex) > 0) {
         const auto &dilatedPolygons = ignis.robotIndexToDilatedPolygonsMap.at(robotIndex);
-        for (const Voronoi::DilatedPolygon &dilatedPolygon : dilatedPolygons)
+        for (const GeosVoronoi::DilatedPolygon &dilatedPolygon : dilatedPolygons)
         {
             std::vector<double> polygonXs;
             std::vector<double> polygonYs;
@@ -146,10 +146,7 @@ void perRobotPlots(size_t robotIndex, const Ignis &ignis, double scaleFactor)
             // std::ostringstream oss;
             // oss << dilatedPolygon.dilation;
             // ImPlot::PlotLine(oss.str().c_str(), polygonXs.data(), polygonYs.data(), polygonXs.size());
-            if (dilatedPolygon.dilation == 0)
-                ImPlot::PlotLine("Dilated Polygons", polygonXs.data(), polygonYs.data(), polygonXs.size(), ImPlotLineFlags_Loop);
-            else
-                ImPlot::PlotLine("Dilated Polygons", polygonXs.data(), polygonYs.data(), polygonXs.size(), ImPlotLineFlags_Loop);
+            ImPlot::PlotLine("Dilated Polygons", polygonXs.data(), polygonYs.data(), polygonXs.size(), ImPlotLineFlags_Loop);
         }
     }
 

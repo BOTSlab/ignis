@@ -3,7 +3,7 @@
 //#include "tinysplinecxx.h"
 #include "CommonTypes.hpp"
 #include "WorldConfig.hpp"
-#include "Voronoi.hpp"
+#include "GeosVoronoi.hpp"
 #include "Track.hpp"
 #include "Judgment.hpp"
 
@@ -21,10 +21,10 @@ using MapOfVectorOfCurves = std::map<size_t, std::vector<Track>>;
 
 double artificialPointDistance = 1.5 * config.robotRadius;
 
-std::vector<Track> curvesFromDilatedPolygons(std::vector<Voronoi::DilatedPolygon> polygons)
+std::vector<Track> curvesFromDilatedPolygons(std::vector<GeosVoronoi::DilatedPolygon> polygons)
 {
     std::vector<Track> curves;
-    for (const Voronoi::DilatedPolygon &polygon : polygons)
+    for (const GeosVoronoi::DilatedPolygon &polygon : polygons)
     {
         Track curve;
 

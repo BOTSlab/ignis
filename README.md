@@ -22,3 +22,22 @@ A light-based guidance system for a multi-robot system operating on a screen
     cmake --preset=default
     cmake --build build
 ```
+
+- While using vcpkg does much of the work required to install external packages
+  there are some build tools needed on your machine.  The following (at least)
+  must be installed:
+
+  autoconf, cmake, libtool
+
+- Using the following advice on switching between Debug/Release builds:
+
+https://stackoverflow.com/questions/7724569/debug-vs-release-in-cmake/64719718#64719718
+
+I succeeded (I think) in creating a debug build with the following sequence of commands
+
+```
+rm -fr build
+cmake --preset=default
+cmake -S . -B build/ -D CMAKE_BUILD_TYPE=Debug
+cmake --build build
+```

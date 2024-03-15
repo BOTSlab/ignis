@@ -83,6 +83,7 @@
         "queue": "cpp",
         "source_location": "cpp",
         "stack": "cpp",
-        "valarray": "cpp"
+        "valarray": "cpp",
+        "*.ipp": "cpp"
     }
 }

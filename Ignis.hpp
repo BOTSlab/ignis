@@ -4,18 +4,19 @@
 #include "TrackGeneration.hpp"
 #include "WorldConfig.hpp"
 #include "worldInitializer.hpp"
-#include "Voronoi.hpp"
+#include "GeosVoronoi.hpp"
 #include "CurveGeneration.hpp"
 
 class Ignis {
 public:
     WorldConfig config;
-    Voronoi::VoronoiBuilder voronoiBuilder;
+    //Voronoi::VoronoiBuilder voronoiBuilder;
+    GeosVoronoi::GeosVoronoiBuilder voronoiBuilder;
 
     std::shared_ptr<WorldState> simWorldState;
     //std::shared_ptr<VectorOfTrackVectors> robotIndexToTracks;
     //std::shared_ptr<VectorOfPlans> robotIndexToPlans;
-    Voronoi::MapOfVectorOfDilatedPolygons robotIndexToDilatedPolygonsMap;
+    GeosVoronoi::MapOfVectorOfDilatedPolygons robotIndexToDilatedPolygonsMap;
     //Voronoi::MapOfVectorOfSkeletons robotIndexToSkeletonsMap;
     CurveGeneration::MapOfVectorOfCurves robotIndexToCurvesMap;
     CurveGeneration::MapOfCurves robotIndexToBestCurveMap;
@@ -74,16 +75,33 @@ public:
 
         for (int i = 0; i < config.numberOfRobots; ++i)
         {
-            auto& bestCurve = robotIndexToBestCurveMap[i];
-            if (!bestCurve.poses.empty())
-            {
-                auto& lastPose = bestCurve.poses.back();
-                double dx = simWorldState->robots[i].x - lastPose.x;
-                double dy = simWorldState->robots[i].y - lastPose.y;
-                double distance = std::sqrt(dx * dx + dy * dy);
-                if (distance > config.robotRadius * 2)
-                    continue;
+            // First determine whether we should do any processing for this robot.
+            // We will only consider skipping if the robot already has a best curve.
+            bool skip = false;
+            if (robotIndexToDilatedPolygonsMap.find(i) == robotIndexToDilatedPolygonsMap.end()) {
+                // The robot has no dilated polygon to judge
+                skip = true;
+            } else {
+                bool bestCurveExists = robotIndexToBestCurveMap.find(i) != robotIndexToBestCurveMap.end();
+                if (bestCurveExists) {
+                    auto& bestCurve = robotIndexToBestCurveMap.at(i);
+                    if (!bestCurve.poses.empty()) {
+                        // If the robot already has a best curve and has not reached its
+                        // end, then we can skip it.
+                        skip = true;
+                    } else {
+                        // Skip if the robot is far from the end of its curve.
+                        auto& lastPose = bestCurve.poses.back();
+                        double dx = simWorldState->robots[i].x - lastPose.x;
+                        double dy = simWorldState->robots[i].y - lastPose.y;
+                        double distance = std::sqrt(dx * dx + dy * dy);
+                        if (distance > config.robotRadius * 2)
+                            skip = true;
+                    }
+                }
             }
+            if (skip)
+                continue;
 
             robotIndexToCurvesMap[i] = CurveGeneration::curvesFromDilatedPolygons(robotIndexToDilatedPolygonsMap.at(i));
             if (robotIndexToCurvesMap[i].empty()) {
@@ -92,10 +110,13 @@ public:
                 robotIndexToBestCurveMap[i] = CurveGeneration::judgeCurves(i, robotIndexToCurvesMap.at(i), simWorldState);
             }
 
-            paused = true;
+            // paused = true;
         }
-
-        //arcTrackPlanManagement();
+        // cout << "robotIndexToBestCurveMap.size(): " << robotIndexToBestCurveMap.size() << endl;
+        if (robotIndexToBestCurveMap.size() == 0) {
+            cout << "No best curves found." << endl;
+            return;
+        }
 
         Following::updateControlInputs(simWorldState, robotIndexToBestCurveMap);
 

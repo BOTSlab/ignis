@@ -12,6 +12,7 @@ namespace Following {
     void updateControlInputs(std::shared_ptr<WorldState> worldState, CurveGeneration::MapOfCurves robotIndexToBestCurves) {
 
         for (int i = 0; i < config.numberOfRobots; ++i) {
+            cout << "i: " << i << "\n";
             if (robotIndexToBestCurves.find(i) == robotIndexToBestCurves.end()) {
                 // For whatever reason, we don't have a curve for this robot.
                 worldState->robots[i].controlInput = {0, 0};

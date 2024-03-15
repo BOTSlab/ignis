@@ -1,5 +1,6 @@
 {
   "dependencies": [
+    "geos",
     {
       "name": "imgui",
       "features": [
@@ -9,7 +10,14 @@
     },
     "implot",
     "opengl",
-    "geos",
+    "tinyspline",
     "cgal"
+  ],
+  "overrides": [
+    {
+      "name": "geos",
+      "version": "3.11.3",
+      "port-version": 1
+    }
   ]
 }
