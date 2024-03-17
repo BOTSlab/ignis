@@ -5,7 +5,7 @@ struct WorldConfig
 {
     const int width = 800;
     const int height = 600;
-    const int numberOfRobots = 2;
+    const int numberOfRobots = 1;
     const int numberOfPucks = 10;
     const double robotRadius = 25;
     const double puckRadius = 35;

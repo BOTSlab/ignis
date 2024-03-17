@@ -171,18 +171,18 @@ void perRobotPlots(size_t robotIndex, const Ignis &ignis, double scaleFactor)
         const auto &curves = ignis.robotIndexToCurvesMap.at(robotIndex);
         for (const Track &curve : curves)
         {
-            std::vector<double> curveXs;
-            std::vector<double> curveYs;
+            int markerSize = 4;
             for (const Pose &pose : curve.poses)
             {
-                curveXs.push_back(pose.x);
-                curveYs.push_back(pose.y);
+                ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, markerSize, color, IMPLOT_AUTO, color);
+                ImPlot::PlotScatter(robotString.c_str(), &pose.x, &pose.y, 1);
+                //markerSize += 2;
             }
-            ImPlot::PlotLine(robotString.c_str(), curveXs.data(), curveYs.data(), curveXs.size());
 
             std::ostringstream oss;
             oss << curve.score;
-            ImPlot::PlotText(oss.str().c_str(), curveXs.back(), curveYs.back());
+            Pose lastPose = curve.poses.back();
+            ImPlot::PlotText(oss.str().c_str(), lastPose.x, lastPose.y);
         }
     }
 
