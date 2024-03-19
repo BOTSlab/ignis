@@ -5,7 +5,6 @@
 #include <utility>
 #include "WorldState.hpp"
 #include "WorldConfig.hpp"
-#include "Track.hpp"
 #include "CurveGeneration.hpp"
 
 namespace Following {

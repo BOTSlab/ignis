@@ -111,34 +111,13 @@ void perRobotPlots(size_t robotIndex, const Ignis &ignis, double scaleFactor)
     ImPlot::PlotScatter(robotString.c_str(), &noseX, &noseY, 1);
     ImPlot::PopStyleVar();
 
-    /*
-    ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 1, ImPlot::GetColormapColor(4), IMPLOT_AUTO, ImPlot::GetColormapColor(4));
-    ImPlot::PlotScatter("Tracks", allTrackXs, allTrackYs, nPointsInAllTracks);
-
-    ImPlot::SetNextMarkerStyle(ImPlotMarker_Asterisk, 3, ImPlot::GetColormapColor(5), IMPLOT_AUTO, ImPlot::GetColormapColor(5));
-    ImPlot::PlotScatter("Best Track", bestTrackXs, bestTrackYs, nPointsInBestTracks);
-
-    ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 1, ImPlot::GetColormapColor(6), IMPLOT_AUTO, ImPlot::GetColormapColor(6));
-    ImPlot::PlotScatter("Plan", planXs, planYs, nPointsInAllPlans);
-    */
-
-    /*
-    for (int i = 0; i < nr; ++i) {
-        for (auto& track : robotIndexToTracks->at(i)) {
-            std::ostringstream oss;
-            oss << track.score;
-            ImPlot::PlotText(oss.str().c_str(), track.poses.back().x, track.poses.back().y);
-        }
-    }
-    */
-
     if (ignis.robotIndexToDilatedPolygonsMap.count(robotIndex) > 0) {
         const auto &dilatedPolygons = ignis.robotIndexToDilatedPolygonsMap.at(robotIndex);
-        for (const GeosVoronoi::DilatedPolygon &dilatedPolygon : dilatedPolygons)
+        for (const DilatedPolygon &dilatedPolygon : dilatedPolygons)
         {
             std::vector<double> polygonXs;
             std::vector<double> polygonYs;
-            for (const CommonTypes::Vertex &vertex : dilatedPolygon.vertices)
+            for (const CommonTypes::Vec2 &vertex : dilatedPolygon.vertices)
             {
                 polygonXs.push_back(vertex.x);
                 polygonYs.push_back(vertex.y);
@@ -146,43 +125,29 @@ void perRobotPlots(size_t robotIndex, const Ignis &ignis, double scaleFactor)
             // std::ostringstream oss;
             // oss << dilatedPolygon.dilation;
             // ImPlot::PlotLine(oss.str().c_str(), polygonXs.data(), polygonYs.data(), polygonXs.size());
-            ImPlot::PlotLine("Dilated Polygons", polygonXs.data(), polygonYs.data(), polygonXs.size()/*, ImPlotLineFlags_Loop*/);
+            ImPlot::PlotLine("Dilated Polygons", polygonXs.data(), polygonYs.data(), polygonXs.size(), ImPlotLineFlags_Loop);
         }
     }
-
-    /*
-    if (ignis.robotIndexToSkeletonsMap.count(robotIndex) > 0) {
-        auto &skeletons = ignis.robotIndexToSkeletonsMap.at(robotIndex);
-        for (const Voronoi::Skeleton &skeleton : skeletons)
-        {
-            int markerSize = 4;
-            for (const CommonTypes::Vertex &vertex : skeleton.vertices)
-            {
-                ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, markerSize, color, IMPLOT_AUTO, color);
-                ImPlot::PlotScatter(robotString.c_str(), &vertex.x, &vertex.y, 1);
-                markerSize += 2;
-            }
-        }
-    }
-    */
 
     if (ignis.robotIndexToCurvesMap.count(robotIndex) > 0) {
 
         const auto &curves = ignis.robotIndexToCurvesMap.at(robotIndex);
-        for (const Track &curve : curves)
+        for (const Curve &curve : curves)
         {
-            int markerSize = 4;
+            double markerSize = 1;
+            ostringstream oss;
+            oss << "Curves for robot " << robotIndex;
             for (const Pose &pose : curve.poses)
             {
-                ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, markerSize, color, IMPLOT_AUTO, color);
-                ImPlot::PlotScatter(robotString.c_str(), &pose.x, &pose.y, 1);
-                //markerSize += 2;
+                ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, (int)markerSize, color, IMPLOT_AUTO, color);
+                ImPlot::PlotScatter(oss.str().c_str(), &pose.x, &pose.y, 1);
+                markerSize += 0.1;
             }
 
-            std::ostringstream oss;
-            oss << curve.score;
+            std::ostringstream textStream;
+            textStream << curve.score;
             Pose lastPose = curve.poses.back();
-            ImPlot::PlotText(oss.str().c_str(), lastPose.x, lastPose.y);
+            ImPlot::PlotText(textStream.str().c_str(), lastPose.x, lastPose.y);
         }
     }
 
@@ -190,13 +155,15 @@ void perRobotPlots(size_t robotIndex, const Ignis &ignis, double scaleFactor)
 
         std::vector<double> curveXs;
         std::vector<double> curveYs;
-        const Track &bestCurve = ignis.robotIndexToBestCurveMap.at(robotIndex);
+        const Curve &bestCurve = ignis.robotIndexToBestCurveMap.at(robotIndex);
         for (const Pose &pose : bestCurve.poses)
         {
             curveXs.push_back(pose.x);
             curveYs.push_back(pose.y);
         }
-        ImPlot::PlotLine("Best Curves", curveXs.data(), curveYs.data(), curveXs.size());
+        ostringstream oss;
+        oss << "Best Curve for robot " << robotIndex;
+        ImPlot::PlotLine(oss.str().c_str(), curveXs.data(), curveYs.data(), curveXs.size());
     }
 }
 
@@ -205,80 +172,6 @@ void plotWorldState(const char *title, const Ignis &ignis)
     auto worldState = ignis.simWorldState;
     auto config = ignis.config;
     double noseRadius = 0.1 * config.robotRadius;
-
-    // As above, but for robots.  Also get coordinates for the "noses" of the
-    // robots, which are the points at the front of the robot, and are used to
-    // draw the direction of the robot.
-    /*
-    int nr = worldState->robots.size();
-    double* robotXs = new double[nr];
-    double* robotYs = new double[nr];
-    double* robotNoseXs = new double[nr];
-    double* robotNoseYs = new double[nr];
-    for (int i = 0; i < nr; ++i) {
-        double x = worldState->robots[i].x;
-        double y = worldState->robots[i].y;
-        double theta = worldState->robots[i].theta;
-        robotXs[i] = x;
-        robotYs[i] = y;
-        robotNoseXs[i] = x + (config.robotRadius - noseRadius) * cos(theta);
-        robotNoseYs[i] = y + (config.robotRadius - noseRadius) * sin(theta);
-    }
-    */
-
-    // Now get the x- and y-coordinates for the tracks.  First figure out how
-    // many total points are there for all robots.  We are going to plot the
-    // tracks for all robots together.
-    /*
-    auto robotIndexToTracks = ignis.robotIndexToTracks;
-    int nPointsInAllTracks = 0;
-    int nPointsInBestTracks = 0;
-    for (int i = 0; i < nr; ++i) {
-        for (auto& track : robotIndexToTracks->at(i)) {
-            nPointsInAllTracks += track.poses.size();
-            if (track.best)
-                nPointsInBestTracks += track.poses.size();
-        }
-    }
-    double* allTrackXs = new double[nPointsInAllTracks];
-    double* allTrackYs = new double[nPointsInAllTracks];
-    double* bestTrackXs = new double[nPointsInBestTracks];
-    double* bestTrackYs = new double[nPointsInBestTracks];
-    int allTracksIndex = 0, bestTrackIndex = 0;
-    for (int i = 0; i < nr; ++i) {
-        for (auto& track : robotIndexToTracks->at(i)) {
-            for (auto& point : track.poses) {
-                allTrackXs[allTracksIndex] = point.x;
-                allTrackYs[allTracksIndex] = point.y;
-                allTracksIndex++;
-                if (track.best) {
-                    bestTrackXs[bestTrackIndex] = point.x;
-                    bestTrackYs[bestTrackIndex] = point.y;
-                    bestTrackIndex++;
-                }
-            }
-        }
-    }
-    //printf("nPointsInAllTracks: %d\n", nPointsInAllTracks);
-    //printf("i: %d\n", i);
-
-    // Get the x- and y-coordinates for each robot's plan.
-    auto robotIndexToPlans = ignis.robotIndexToPlans;
-    int nPointsInAllPlans = 0;
-    for (int i = 0; i < nr; ++i) {
-        nPointsInAllPlans += robotIndexToPlans->at(i).poses.size();
-    }
-    double* planXs = new double[nPointsInAllPlans];
-    double* planYs = new double[nPointsInAllPlans];
-    int planIndex = 0;
-    for (int i = 0; i < nr; ++i) {
-        for (auto& point : robotIndexToPlans->at(i).poses) {
-            planXs[planIndex] = point.x;
-            planYs[planIndex] = point.y;
-            planIndex++;
-        }
-    }
-    */
 
     double boundaryXs[] = {0, static_cast<double>(config.width), static_cast<double>(config.width), 0};
     double boundaryYs[] = {0, 0, static_cast<double>(config.height), static_cast<double>(config.height)};
@@ -315,21 +208,6 @@ void plotWorldState(const char *title, const Ignis &ignis)
         ImPlot::EndPlot();
     }
     ImGui::End();
-
-    //    delete [] puckXs;
-    //    delete [] puckYs;
-    /*
-    delete [] robotXs;
-    delete [] robotYs;
-    delete [] robotNoseXs;
-    delete [] robotNoseYs;
-    */
-    /*
-    delete [] allTrackXs;
-    delete [] allTrackYs;
-    delete [] planXs;
-    delete [] planYs;
-    */
 }
 
 void handleControlsWindow(Ignis &ignis, ImGuiIO &io)

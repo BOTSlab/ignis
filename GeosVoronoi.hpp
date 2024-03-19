@@ -1,7 +1,6 @@
 #pragma once
 #include <geos/geom/GeometryFactory.h>
 #include <geos/triangulate/VoronoiDiagramBuilder.h>
-//#include <geos/geom/CoordinateSequenceFactory.h>
 #include <geos/geom/CoordinateArraySequence.h>
 #include "CommonTypes.hpp"
 #include "WorldState.hpp"
@@ -11,37 +10,19 @@
 using namespace geos::geom;
 using namespace geos::triangulate;
 
+using DilatedPolygon = CommonTypes::DilatedPolygon;
+using Vec2 = CommonTypes::Vec2;
+
 namespace GeosVoronoi {
-
-struct DilatedPolygon {
-    double dilation;
-    std::vector<CommonTypes::Vertex> vertices;
-};
-
-// A Skeleton represents the information extracted from a dilated polygon that
-// will be used to form a Curve.
-/*
-struct Skeleton {
-    // The robot's pose is the beginning of every Skeleton.
-    Pose beginningPose;
-
-    // We'll "unwrap" all of the dilated polygon's vertices in the right order
-    // to match the robot's orientation.
-    std::vector<CommonTypes::Vertex> vertices;
-};
-*/
 
 using MapOfVectorOfDilatedPolygons = std::map<size_t, std::vector<DilatedPolygon>>;
 
-//using MapOfVectorOfSkeletons = std::map<size_t, std::vector<Skeleton>>;
-
-using MapOfCentroids = std::map<size_t, CommonTypes::Vertex>;
+using MapOfCentroids = std::map<size_t, Vec2>;
 
 class GeosVoronoiBuilder {
 private:
     Envelope envelope;
     MapOfVectorOfDilatedPolygons mapOfDilatedPolygons;
-    //MapOfVectorOfSkeletons mapOfSkeletons;
     MapOfCentroids mapOfCentroids;
 
     const double siteShiftRate = 0.01;
@@ -53,9 +34,6 @@ public:
 
     void compute(std::shared_ptr<WorldState> worldState) {
         computeDilatedPolygons(worldState);
-
-        // From each dilated polygon we select a skeleton that will be used to form a track.
-        //computeSkeletons(worldState);
     }
 
     // Must be called after compute so that the centroids are up to date.
@@ -73,10 +51,6 @@ public:
     MapOfVectorOfDilatedPolygons getMapOfDilatedPolygons() {
         return mapOfDilatedPolygons;
     }
-
-    //MapOfVectorOfSkeletons getMapOfSkeletons() {
-    //    return mapOfSkeletons;
-    //}
 
     MapOfCentroids getMapOfCentroids() {
         return mapOfCentroids;
@@ -144,7 +118,7 @@ private:
 
             // Determine the centroid of the clipped polygon
             auto centroid = clippedPolygon->getCentroid();
-            CommonTypes::Vertex centroidVertex = {centroid->getX(), centroid->getY()};
+            CommonTypes::Vec2 centroidVertex = {centroid->getX(), centroid->getY()};
             mapOfCentroids.emplace(robotIndex, centroidVertex);
 
             // Determine the shortest distance from robotPoint to the boundary of the polygon
@@ -172,8 +146,8 @@ private:
 
             // DEBUG: Add the original polygon to the list of dilated polygons (with a dilation of 0)
             //dilations.push_back(0);
-dilations.clear();
-dilations.push_back(-100);
+            dilations.clear();
+            dilations.push_back(-100);
 
             //std::cout << "Dilations: ";
             //for (const auto& d : dilations) {
@@ -201,12 +175,12 @@ dilations.push_back(-100);
                 //cout << "geosDilatedPolygon->getNumPoints(): " << nPoints << endl;
                 //cout << "AFTER geosPolygonProcessing" << endl;
 
-                // Note that we are not including the last point, which is the same as the first
+                // Note that we ARE including the last point, which is the same as the first
                 
-                for (int j = 0; j < nPoints - 1; ++j) {
+                for (int j = 0; j < nPoints; ++j) {
 //if (j > 20) break;
                     auto coord = geosDilatedPolygon->getCoordinates()->getAt(j);
-                    dilatedPolygon.vertices.push_back(CommonTypes::Vertex(coord.x, coord.y));
+                    dilatedPolygon.vertices.push_back(CommonTypes::Vec2(coord.x, coord.y));
                 }
 
                 if (dilatedPolygon.vertices.size() >= 3)
@@ -234,101 +208,22 @@ dilations.push_back(-100);
         }
         //cout << "geosDilatedPolygon->getNumPoints(): " << geosDilatedPolygon->getNumPoints() << endl;
 
-
-        // Define a point ahead of the robot.
-        double aheadDistance = 100;
-        double aheadX = robot.x + aheadDistance * std::cos(robot.theta);
-        double aheadY = robot.y + aheadDistance * std::sin(robot.theta);
-        auto aheadPoint = GeometryFactory::getDefaultInstance()->createPoint({aheadX, aheadY});
-        //cout << "geosPolygonProcessing: B" << endl;
-
-        // p1 is the closest point on the polygon to the robot's position.
-        geos::geom::Point *p1 = findClosestPointOnPolygon(geosDilatedPolygon, robotPoint);
-        //cout << "geosPolygonProcessing: C" << endl;
-
-        // p2 is the closest point on the polygon to the point ahead of the robot.
-        geos::geom::Point *p2 = findClosestPointOnPolygon(geosDilatedPolygon, aheadPoint);
-        //cout << "geosPolygonProcessing: D" << endl;
-
-        // Determine if the robot is inside the polygon.
-        bool inside = geosDilatedPolygon->contains(robotPoint);
-        //cout << "geosPolygonProcessing: E" << endl;
-
-        if (inside) {
-        } else {
-            // Create a CoordinateArraySequence using the following points: robotPoint, aheadPoint, p1, p2, and robotPoint.
-            
-            //cout << "geosPolygonProcessing: F" << endl;
-
-            geos::geom::CoordinateArraySequence *cas = new geos::geom::CoordinateArraySequence();
-
-            cas->add(geos::geom::Coordinate(robotPoint->getCoordinate()->x, robotPoint->getCoordinate()->y));
-            cas->add(geos::geom::Coordinate(aheadPoint->getCoordinate()->x, aheadPoint->getCoordinate()->y));
-            cas->add(geos::geom::Coordinate(p2->getCoordinate()->x, p2->getCoordinate()->y));
-            auto centroid = geosDilatedPolygon->getCentroid();
-            cas->add(geos::geom::Coordinate(centroid->getX(), centroid->getY()));
-            cas->add(geos::geom::Coordinate(p1->getCoordinate()->x, p1->getCoordinate()->y));
-            cas->add(geos::geom::Coordinate(robotPoint->getCoordinate()->x, robotPoint->getCoordinate()->y));
-            auto linearRing = factory->createLinearRing(cas);
-            if (linearRing == nullptr) {
-                cout << "NULL linearRing" << endl;
-            }
-
-            //cout << "geosPolygonProcessing: I" << endl;
-            // Create a Polygon from the LinearRing
-            std::unique_ptr<Polygon> auxPolygon(factory->createPolygon(linearRing, nullptr));
-            if (auxPolygon == nullptr) {
-                cout << "NULL auxPolygon" << endl;
-                return nullptr;
-            }
-            if (!auxPolygon->isValid()) {
-                cout << "auxPolygon is NOT valid" << endl;
-                cout << auxPolygon->toString() << endl;
-                return nullptr;
-            }
-
-            //cout << "auxPolygon->getNumPoints(): " << auxPolygon->getNumPoints() << endl;
-            //cout << "geosDilatedPolygon->getNumPoints(): " << geosDilatedPolygon->getNumPoints() << endl;
-            //cout << "polygonPtr->isValid(): " << polygonPtr->isValid() << endl;
-            //cout << "geosDilatedPolygon->isValid(): " << geosDilatedPolygon->isValid() << endl;
-
-            //cout << "geosPolygonProcessing: J" << endl;
-            // Compute the union of geosDilatedPolygon and polygonPtr
-            auto unionPolygon = geosDilatedPolygon->Union(auxPolygon.get());
-            if (unionPolygon == nullptr) {
-                cout << "NULL unionPolygon" << endl;
-                return nullptr;
-            }
-            if (!unionPolygon->isValid()) {
-                cout << "unionPolygon is NOT valid" << endl;
-                return nullptr;
-            }
-            //cout << "unionPolygon->getNumPoints(): " << unionPolygon->getNumPoints() << endl;
-            //cout << "geosPolygonProcessing: K" << endl;
-            
-            return unionPolygon;
-            
-            //auto roundedUnionPolygon = unionPolygon->buffer(-10)->buffer(10);
-            //return roundedUnionPolygon;
-        }
-        //cout << "geosPolygonProcessing: L" << endl;
-        
         return geosDilatedPolygon;
     }
-
+/*
     geos::geom::Point* findClosestPointOnPolygon(unique_ptr<geos::geom::Geometry> &polygon, geos::geom::Point *point) {
         //cout << "findClosestPointOnPolygon START" << endl;
         // Find the closest edge of the polygon to the given point.
         auto closestEdgeIndices = findClosestEdgeToPoint(polygon, point);
-        CommonTypes::Vertex first = {polygon->getCoordinates()->getAt(closestEdgeIndices.first).x, polygon->getCoordinates()->getAt(closestEdgeIndices.first).y};
-        CommonTypes::Vertex second = {polygon->getCoordinates()->getAt(closestEdgeIndices.second).x, polygon->getCoordinates()->getAt(closestEdgeIndices.second).y};
+        CommonTypes::Vec2 first = {polygon->getCoordinates()->getAt(closestEdgeIndices.first).x, polygon->getCoordinates()->getAt(closestEdgeIndices.first).y};
+        CommonTypes::Vec2 second = {polygon->getCoordinates()->getAt(closestEdgeIndices.second).x, polygon->getCoordinates()->getAt(closestEdgeIndices.second).y};
         //cout << "findClosestPointOnPolygon: AA" << endl;
         
         // We find the projection of the point's position onto the closest edge
-        CommonTypes::Vertex pointV = {point->getCoordinates()->getAt(0).x, point->getCoordinates()->getAt(0).y};
-        CommonTypes::Vertex a = pointV - first;
-        CommonTypes::Vertex b = {second.x - first.x, second.y - first.y};
-        CommonTypes::Vertex proj = first + b * (a.dot(b) / b.dot(b));
+        CommonTypes::Vec2 pointV = {point->getCoordinates()->getAt(0).x, point->getCoordinates()->getAt(0).y};
+        CommonTypes::Vec2 a = pointV - first;
+        CommonTypes::Vec2 b = {second.x - first.x, second.y - first.y};
+        CommonTypes::Vec2 proj = first + b * (a.dot(b) / b.dot(b));
         //cout << "findClosestPointOnPolygon: BB" << endl;
 
         // Convert proj into a geos point.
@@ -359,106 +254,6 @@ dilations.push_back(-100);
         }
         //cout << "findClosestEdgeToPoint END" << endl;
         return closestEdgeIndices;
-    }
-
-    /*
-    void computeSkeletons(std::shared_ptr<WorldState> worldState)
-    {
-        mapOfSkeletons.clear();
-
-        // Go through all dilated polygons.  For each one, we will find the
-        // two adjacent vertices that are closest to the robot's position.
-        for (auto& pair : mapOfDilatedPolygons) {
-            int robotIndex = pair.first;
-            auto& dilatedPolygons = pair.second;
-            auto& robot = worldState->robots[robotIndex];
-            Pose robotPose = {robot.x, robot.y, robot.theta};
-
-            std::vector<Skeleton> skeletons;
-        
-            for (std::size_t j = 0; j < dilatedPolygons.size(); ++j) {
-                auto& dilatedPolygon = dilatedPolygons[j];
-                auto& vertices = dilatedPolygon.vertices;
-
-                // Determine the edge of the dilated polygon that is closest to the robot's position
-                double minDistance = std::numeric_limits<double>::max();
-                std::pair<CommonTypes::Vertex, CommonTypes::Vertex> closestEdge;
-                std::pair<size_t, size_t> closestEdgeIndices;
-                for (std::size_t k = 0; k < vertices.size(); ++k) {
-                    auto& vertex1 = vertices[k];
-                    size_t nextK = (k + 1) % vertices.size();
-                    auto& vertex2 = vertices[nextK];
-
-                    // Calculate the distance from the robot to the edge
-                    double dx = vertex2.x - vertex1.x;
-                    double dy = vertex2.y - vertex1.y;
-                    double edgeLength = std::sqrt(dx * dx + dy * dy);
-                    double t = ((robot.x - vertex1.x) * dx + (robot.y - vertex1.y) * dy) / (edgeLength * edgeLength);
-
-                    // Clamp t between 0 and 1 to stay within the edge
-                    t = std::max(0.0, std::min(1.0, t));
-
-                    // Calculate the closest point on the edge to the robot
-                    double closestX = vertex1.x + t * dx;
-                    double closestY = vertex1.y + t * dy;
-
-                    // Calculate the distance from the robot to the closest point
-                    double distance = std::sqrt((closestX - robot.x) * (closestX - robot.x) + (closestY - robot.y) * (closestY - robot.y));
-
-                    if (distance < minDistance) {
-                        minDistance = distance;
-                        closestEdge = {vertex1, vertex2};
-                        closestEdgeIndices = {k, nextK};
-                    }
-                }
-//skeletons.push_back({closestEdge.first, closestEdge.second});
-
-                // Now that we have the closest edge, choose which of the two
-                // vertices in this edge has the smallest relative angle from
-                // the robot's orientation.
-                double angle1 = std::atan2(closestEdge.first.y - robot.y, closestEdge.first.x - robot.x);
-                double angle2 = std::atan2(closestEdge.second.y - robot.y, closestEdge.second.x - robot.x);
-
-                double relativeAngle1 = Angles::getAngularDifference(angle1, robot.theta);
-                double relativeAngle2 = Angles::getAngularDifference(angle2, robot.theta);
-                //std::cout << "relativeAngle1: " << relativeAngle1 << " relativeAngle2: " << relativeAngle2 << std::endl;
-
-                Skeleton skeleton;
-                skeleton.beginningPose = robotPose;
-
-                // We'll "unwrap" all of the dilated polygon's vertices in the right order.
-                // The first vertex will the one with the smallest relative angle. 
-                int firstVertexIndex = 0;
-                int indexDelta = 0;
-                if (relativeAngle1 < relativeAngle2) {
-                    firstVertexIndex = closestEdgeIndices.first;
-                    indexDelta = closestEdgeIndices.first - closestEdgeIndices.second;
-                } else {
-                    firstVertexIndex = closestEdgeIndices.second;
-                    indexDelta = closestEdgeIndices.second - closestEdgeIndices.first;
-                }
-
-                skeleton.vertices.push_back(vertices[firstVertexIndex]);
-
-                cout << "Dilated polygon vertices: " << vertices.size() << endl;
-                for (int k = firstVertexIndex + indexDelta; ; k += indexDelta) {
-                    int k_mod = (k + vertices.size()) % vertices.size();
-                    if (k_mod == firstVertexIndex) {
-                        break;
-                    }
-                    cout << "k: " << k << endl;
-                    cout << "k_mod: " << k_mod << endl;
-                    skeleton.vertices.push_back(vertices[k_mod]);
-                }
-                cout << "Skeleton vertices: " << skeleton.vertices.size() << endl;
-
-                skeletons.push_back(skeleton);
-            }
-            if (!skeletons.empty()) {
-                mapOfSkeletons.emplace(robotIndex, skeletons);
-            }
-        }
-        //std::cout << "END OF COMPUTE SKELETONS" << std::endl;
     }
     */
 };
