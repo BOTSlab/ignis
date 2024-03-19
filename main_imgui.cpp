@@ -141,7 +141,7 @@ void perRobotPlots(size_t robotIndex, const Ignis &ignis, double scaleFactor)
             {
                 ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, (int)markerSize, color, IMPLOT_AUTO, color);
                 ImPlot::PlotScatter(oss.str().c_str(), &pose.x, &pose.y, 1);
-                markerSize += 0.1;
+                markerSize += 0.01;
             }
 
             std::ostringstream textStream;

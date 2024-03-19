@@ -118,6 +118,7 @@ skip = false;
 
         Following::updateControlInputs(simWorldState, robotIndexToBestCurveMap);
 
+robotIndexToBestCurveMap.clear();
         consumeBestCurves();
 
         stepCount++;
