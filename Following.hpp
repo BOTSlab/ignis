@@ -5,51 +5,76 @@
 #include <utility>
 #include "WorldState.hpp"
 #include "WorldConfig.hpp"
-#include "CurveGeneration.hpp"
+#include "CommonTypes.hpp"
+
+using namespace CommonTypes;
 
 namespace Following {
-    void updateControlInputs(std::shared_ptr<WorldState> worldState, CurveGeneration::MapOfCurves robotIndexToBestCurves) {
 
-        for (int i = 0; i < config.numberOfRobots; ++i) {
-            cout << "i: " << i << "\n";
-            if (robotIndexToBestCurves.find(i) == robotIndexToBestCurves.end()) {
-                // For whatever reason, we don't have a curve for this robot.
-                worldState->robots[i].controlInput = {0, 0};
-                cout << "No curve for robot " << i << endl;
-                continue;
-            }
+void updateControlInput(std::shared_ptr<WorldState> worldState, int i, Curve &curve)
+{
+    // std::cout << "START updateControlInput for robot: " << i << "\n";
+    if (curve.poses.size() == 0) {
+        std::cerr << "updateControlInput - No poses in curve for robot " << i << std::endl;
+        return;
+    }
 
-            // Choose the point at the nose of the robot.
-            double noseX = worldState->robots[i].x + config.robotRadius * cos(worldState->robots[i].theta);
-            double noseY = worldState->robots[i].y + config.robotRadius * sin(worldState->robots[i].theta);
+    // Choose the point at the nose of the robot.
+    double noseX = worldState->robots[i].x + config.robotRadius * cos(worldState->robots[i].theta);
+    double noseY = worldState->robots[i].y + config.robotRadius * sin(worldState->robots[i].theta);
 
-            // Find the point on the curve closest to (noseX, noseY).
-            double minDistance = std::numeric_limits<double>::max();
-            int closestIndex = 0;
-            auto &curve = robotIndexToBestCurves[i];
-            for (int j = 0; j < curve.poses.size(); ++j) {
-                double dx = curve.poses[j].x - noseX;
-                double dy = curve.poses[j].y - noseY;
-                double distance = std::sqrt(dx * dx + dy * dy);
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    closestIndex = j;
-                }
-            }
-
-            // Determine whether the the point closest to (noseX, noseY) lies to
-            // the left or right of the line from the robot's current position
-            // through its nose.
-            double dx = curve.poses[closestIndex].x - worldState->robots[i].x;
-            double dy = curve.poses[closestIndex].y - worldState->robots[i].y;
-            double angle = std::atan2(dy, dx);
-            double angleDifference = angle - worldState->robots[i].theta;
-            while (angleDifference > M_PI) angleDifference -= 2 * M_PI;
-            while (angleDifference < -M_PI) angleDifference += 2 * M_PI;
-
-            //double angularSpeed = config.maxAngularSpeed * angleDifference / M_PI;
-            double angularSpeed = config.maxAngularSpeed * (angleDifference > 0 ? 1 : -1);
-            worldState->robots[i].controlInput = {config.maxForwardSpeed, angularSpeed};
+    // Find the point on the curve closest to (noseX, noseY).
+    double minDistance = std::numeric_limits<double>::max();
+    int closestIndex = -1;
+    for (int j = 0; j < curve.poses.size(); ++j) {
+        double dx = curve.poses[j].x - noseX;
+        double dy = curve.poses[j].y - noseY;
+        double distance = std::sqrt(dx * dx + dy * dy);
+        if (distance < minDistance) {
+            minDistance = distance;
+            closestIndex = j;
         }
     }
-};
+    if (closestIndex == -1) {
+        std::cerr << "No closest point found on curve for robot " << i << std::endl;
+        return;
+    }
+
+    // Determine whether the the point closest to (noseX, noseY) lies to
+    // the left or right of the line from the robot's current position
+    // through its nose.
+    double dx = curve.poses[closestIndex].x - worldState->robots[i].x;
+    double dy = curve.poses[closestIndex].y - worldState->robots[i].y;
+    double angle = std::atan2(dy, dx);
+    double angleDifference = angle - worldState->robots[i].theta;
+    while (angleDifference > M_PI) angleDifference -= 2 * M_PI;
+    while (angleDifference < -M_PI) angleDifference += 2 * M_PI;
+
+    //double angularSpeed = config.maxAngularSpeed * angleDifference / M_PI;
+    double angularSpeed = config.maxAngularSpeed * (angleDifference > 0 ? 1 : -1);
+    worldState->robots[i].controlInput = {config.maxForwardSpeed, angularSpeed};
+
+    // Consume the curve by the closest point and all preceding points.
+    if (minDistance < config.robotRadius / 4) {
+        // std::cout << "Consuming curve for robot " << i << " at index " << closestIndex << "\n";
+        curve.poses.erase(curve.poses.begin(), curve.poses.begin() + closestIndex + 1);
+    }
+    // std::cout << "END updateControlInput for robot: " << i << "\n";
+}
+
+void updateControlInputs(std::shared_ptr<WorldState> worldState, MapOfCurves &robotIndexToBestCurves)
+{
+    for (int i = 0; i < config.numberOfRobots; ++i)
+    {
+        if (robotIndexToBestCurves.find(i) == robotIndexToBestCurves.end()) {
+            // For whatever reason, we don't have a curve for this robot.
+            worldState->robots[i].controlInput = {0, 0};
+            cout << "No curve for robot " << i << endl;
+            continue;
+        }
+
+        updateControlInput(worldState, i, robotIndexToBestCurves.at(i));
+    }
+}
+
+}; // namespace Following

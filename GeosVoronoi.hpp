@@ -1,4 +1,6 @@
 #pragma once
+#include <map>
+#include <vector>
 #include <geos/geom/GeometryFactory.h>
 #include <geos/triangulate/VoronoiDiagramBuilder.h>
 #include <geos/geom/CoordinateArraySequence.h>
@@ -119,7 +121,7 @@ private:
             // Determine the centroid of the clipped polygon
             auto centroid = clippedPolygon->getCentroid();
             CommonTypes::Vec2 centroidVertex = {centroid->getX(), centroid->getY()};
-            mapOfCentroids.emplace(robotIndex, centroidVertex);
+            mapOfCentroids[robotIndex] = centroidVertex;
 
             // Determine the shortest distance from robotPoint to the boundary of the polygon
             auto boundary = clippedPolygon->getBoundary();
@@ -129,25 +131,25 @@ private:
             // Determine the minimum distance between any vertex of the clipped
             // polygon and the centroid of the polygon.  This will be used to
             // determine the maximum dilation.
-            double minDistance = std::numeric_limits<double>::max();
+            double maxDistance = 0;
             for (int j = 0; j < clippedPolygon->getNumPoints(); ++j) {
                 auto coord = clippedPolygon->getCoordinates()->getAt(j);
                 double distance = std::sqrt((coord.x - centroid->getX()) * (coord.x - centroid->getX()) + (coord.y - centroid->getY()) * (coord.y - centroid->getY()));
-                if (distance < minDistance) {
-                    minDistance = distance;
+                if (distance > maxDistance) {
+                    maxDistance = distance;
                 }
             }
 
             // Choose the set of dilations we will produce.
             std::vector<double> dilations;
-            for (double d = -config.robotRadius; d > -minDistance + config.robotRadius; d -= config.dilationDelta) {
+            for (double d = -config.robotRadius; d > -maxDistance; d -= config.dilationDelta) {
                 dilations.push_back(d);
             }
 
             // DEBUG: Add the original polygon to the list of dilated polygons (with a dilation of 0)
             //dilations.push_back(0);
-            dilations.clear();
-            dilations.push_back(-100);
+            //dilations.clear();
+            //dilations.push_back(-100);
 
             //std::cout << "Dilations: ";
             //for (const auto& d : dilations) {
@@ -187,10 +189,10 @@ private:
                     dilatedPolygons.push_back(dilatedPolygon);
             }
 
-            std::cout << "Dilated polygons: " << dilatedPolygons.size() << std::endl;
+            // std::cout << "Dilated polygons: " << dilatedPolygons.size() << std::endl;
             
             if (!dilatedPolygons.empty()) {
-                mapOfDilatedPolygons.emplace(robotIndex, dilatedPolygons);
+                mapOfDilatedPolygons[robotIndex] = dilatedPolygons;
             }
         }
         // std::cout << "END OF COMPUTE DILATED POLYGONS " << std::endl;
@@ -199,7 +201,8 @@ private:
     unique_ptr<geos::geom::Geometry> geosPolygonProcessing(GeometryFactory::Ptr &factory, unique_ptr<geos::geom::Geometry> &clippedPolygon, double dilation, geos::geom::Point *robotPoint, Robot &robot) {
         //cout << "geosPolygonProcessing: A" << endl;
         //auto geosDilatedPolygon = clippedPolygon->buffer(dilation);
-        auto geosDilatedPolygon = clippedPolygon->buffer(dilation)->buffer(-50)->buffer(50);
+        //auto geosDilatedPolygon = clippedPolygon->buffer(dilation)->buffer(-50)->buffer(50);
+        auto geosDilatedPolygon = clippedPolygon->buffer(dilation)->buffer(-5)->buffer(5);
         if (geosDilatedPolygon->getNumPoints() < 3)
             return nullptr;
         if (!geosDilatedPolygon->isValid()) {

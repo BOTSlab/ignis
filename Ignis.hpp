@@ -1,10 +1,10 @@
 #pragma once
-#include "Following.hpp"
 #include "Sim.hpp"
 #include "WorldConfig.hpp"
 #include "worldInitializer.hpp"
 #include "GeosVoronoi.hpp"
 #include "CurveGeneration.hpp"
+#include "Following.hpp"
 
 class Ignis {
 public:
@@ -13,8 +13,8 @@ public:
 
     std::shared_ptr<WorldState> simWorldState;
     GeosVoronoi::MapOfVectorOfDilatedPolygons robotIndexToDilatedPolygonsMap;
-    CurveGeneration::MapOfVectorOfCurves robotIndexToCurvesMap;
-    CurveGeneration::MapOfCurves robotIndexToBestCurveMap;
+    MapOfVectorOfCurves robotIndexToCurvesMap;
+    MapOfCurves robotIndexToBestCurveMap;
 
     // Simulation state variables.
     int stepCount = 0;
@@ -66,60 +66,9 @@ public:
         voronoiBuilder.updateRobotSites(simWorldState);
         robotIndexToDilatedPolygonsMap = voronoiBuilder.getMapOfDilatedPolygons();
 
-        for (int i = 0; i < config.numberOfRobots; ++i)
-        {
-            // First determine whether we should do any processing for this robot.
-            // We will only consider skipping if the robot already has a best curve.
-            bool skip = false;
-            if (robotIndexToDilatedPolygonsMap.find(i) == robotIndexToDilatedPolygonsMap.end()) {
-                // The robot has no dilated polygon to judge
-                skip = true;
-            } else {
-                bool bestCurveExists = robotIndexToBestCurveMap.find(i) != robotIndexToBestCurveMap.end();
-                if (bestCurveExists) {
-                    auto& bestCurve = robotIndexToBestCurveMap.at(i);
-                    if (!bestCurve.poses.empty()) {
-                        /*
-                        // If the robot already has a best curve and has not reached its
-                        // end, then we can skip it.
-                        skip = true;
-                    } else {
-                        */
-                        // Skip if the robot is far from the end of its curve.
-                        auto& lastPose = bestCurve.poses.back();
-                        double dx = simWorldState->robots[i].x - lastPose.x;
-                        double dy = simWorldState->robots[i].y - lastPose.y;
-                        double distance = std::sqrt(dx * dx + dy * dy);
-                        if (distance > config.robotRadius * 2)
-                            skip = true;
-                    }
-                }
-            }
-            if (skip) {
-                cout << "Skipping robot " << i << endl;
-                continue;
-            }
-skip = false;
-            cout << "Robot " << i << " is generating curves." << endl;
-            robotIndexToCurvesMap[i] = CurveGeneration::curvesFromDilatedPolygons(robotIndexToDilatedPolygonsMap.at(i), simWorldState->robots[i]);
-            if (robotIndexToCurvesMap[i].empty()) {
-                cout << "Robot " << i << " has no curves to judge." << endl;
-            } else {
-                robotIndexToBestCurveMap[i] = CurveGeneration::judgeCurves(i, robotIndexToCurvesMap.at(i), simWorldState);
-            }
-
-            // paused = true;
-        }
-        // cout << "robotIndexToBestCurveMap.size(): " << robotIndexToBestCurveMap.size() << endl;
-        if (robotIndexToBestCurveMap.size() == 0) {
-            cout << "No best curves found." << endl;
-            return;
-        }
+        updateBestCurves();
 
         Following::updateControlInputs(simWorldState, robotIndexToBestCurveMap);
-
-robotIndexToBestCurveMap.clear();
-        consumeBestCurves();
 
         stepCount++;
 
@@ -154,23 +103,51 @@ robotIndexToBestCurveMap.clear();
         return paused;
     }
 
-private:
-    void consumeBestCurves()
+    int getStepCount() const
     {
-        for (auto& pair : robotIndexToBestCurveMap) {
-            int robotIndex = pair.first;
-            auto& bestCurve = pair.second;
+        return stepCount;
+    }
+    
+private:
+    void updateBestCurves()
+    {
+        for (int i = 0; i < config.numberOfRobots; ++i)
+        {
+            // First determine whether we should do any processing for this robot.
+            // We will only consider skipping if the robot already has a best curve.
+            bool skip = false;
+            if (robotIndexToDilatedPolygonsMap.find(i) == robotIndexToDilatedPolygonsMap.end()) {
+                // The robot has no dilated polygon to judge
+                cout << "Robot " << i << " has no dilated polygon to judge." << endl;
+                skip = true;
+            } else {
+                bool bestCurveExists = robotIndexToBestCurveMap.find(i) != robotIndexToBestCurveMap.end();
+                if (bestCurveExists && !robotIndexToBestCurveMap.at(i).poses.empty()) {
+                    skip = true;
+                }
+            }
+            if (skip) {
+                // cout << "Skipping robot " << i << endl;
+                continue;
+            }
+//skip = false;
+            cout << "Robot " << i << " is generating curves." << endl;
+            robotIndexToCurvesMap[i] = CurveGeneration::curvesFromDilatedPolygons(robotIndexToDilatedPolygonsMap.at(i), simWorldState->robots[i]);
+            if (robotIndexToCurvesMap[i].empty()) {
+                cout << "Robot " << i << " has no curves to judge." << endl;
+            } else {
+                robotIndexToBestCurveMap[i] = CurveGeneration::judgeCurves(i, robotIndexToCurvesMap.at(i), simWorldState);
+            }
 
-            auto firstPose = bestCurve.poses.begin();
-            double dx = simWorldState->robots[robotIndex].x - firstPose->x;
-            double dy = simWorldState->robots[robotIndex].y - firstPose->y;
-            double distance = std::sqrt(dx * dx + dy * dy);
-
-            // If the closest point on the curve lies within the body of the robot, remove that point from the curve
-            if (distance <= config.robotRadius)
-                bestCurve.poses.erase(firstPose);
+            // paused = true;
+        }
+        // cout << "robotIndexToBestCurveMap.size(): " << robotIndexToBestCurveMap.size() << endl;
+        if (robotIndexToBestCurveMap.size() == 0) {
+            cout << "No best curves found." << endl;
+            return;
         }
     }
+
     void reset()
     {
         simWorldState = worldInitializer();

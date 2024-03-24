@@ -64,4 +64,4 @@ int angle2int(double angle, int topI)
     return (int)(topI * angle / TWO_PI + 0.5);
 }
 
-};
+}; // namespace Angles

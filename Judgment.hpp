@@ -1,12 +1,15 @@
 #pragma once
 #include <vector>
 #include <cmath>
+#include "Following.hpp"
 #include "Sim.hpp"
 #include "WorldConfig.hpp"
 #include "WorldState.hpp"
 #include "CommonTypes.hpp"
 
 using namespace CommonTypes;
+
+using namespace Following;
 
 namespace Judgment {
 
@@ -25,7 +28,8 @@ double averagePuckDistanceToGoal(std::shared_ptr<WorldState> worldState, double 
     return averageDistance;
 }
 
-void judgeCurve(Curve& curve, int robotIndex, std::shared_ptr<WorldState> worldState) {
+double judgeCurve(const Curve& curve, int robotIndex, std::shared_ptr<WorldState> worldState) {
+    // cout << "judgeCurve - robotIndex: " << robotIndex << endl;
     // Reset the number of collisions.  The actual world state that worldState
     // was copied from has its own history of collisions, but we want to judge
     // the curve as if it were the first time the robot has moved along it.  
@@ -37,16 +41,10 @@ void judgeCurve(Curve& curve, int robotIndex, std::shared_ptr<WorldState> worldS
     worldState->robots.clear();
     worldState->robots.push_back(robot);
 
-    for (int i = 0; i < worldState->robots.size(); ++i) {
-        if (i != robotIndex) {
-            worldState->robots[i].vx = 0;
-            worldState->robots[i].vy = 0;
-        }
-    }
-
     double beforeDistance = averagePuckDistanceToGoal(worldState, config.puckGoalX, config.puckGoalY);
 
-    // Move the robot at robotIndex along the curve.
+    // Teleport the robot at robotIndex along the curve.
+    /*
     for (int i = 0; i < curve.poses.size(); ++i) {
         worldState->robots[robotIndex].x = curve.poses[i].x;
         worldState->robots[robotIndex].y = curve.poses[i].y;
@@ -56,16 +54,41 @@ void judgeCurve(Curve& curve, int robotIndex, std::shared_ptr<WorldState> worldS
         // Call sim update
         Sim::update(worldState);
     }
+    */
+
+    // Simulate the robot moving along the curve.  Since following the curve
+    // will consume it, first make a copy to study.
+    Curve curveCopy = curve;
+    int stepsSinceCurveShrank = 0;
+    int lastPoseCount = curveCopy.poses.size();
+    while (curveCopy.poses.size() > 0) {
+        //cout << "curveCopy.poses.size(): " << curveCopy.poses.size() << endl;
+        Sim::update(worldState);
+        Following::updateControlInput(worldState, robotIndex, curveCopy);
+        if (curveCopy.poses.size() != lastPoseCount) {
+            lastPoseCount = curveCopy.poses.size();
+            stepsSinceCurveShrank = 0;
+        } else {
+            stepsSinceCurveShrank++;
+        }
+        if (stepsSinceCurveShrank > config.maxStallSteps) {
+            cout << "Curve has not shrunk in " << config.maxStallSteps << " steps.  Breaking." << endl;
+            break;
+        }
+    }
 
     double afterDistance = averagePuckDistanceToGoal(worldState, config.puckGoalX, config.puckGoalY);
 
-    if (worldState->nRobotRobotCollisions == 0 && worldState->nRobotBoundaryCollisions == 0) {
-        curve.score = (beforeDistance - afterDistance);
-        std::cout << "beforeDistance: " << beforeDistance << " afterDistance: " << afterDistance << " score: " << curve.score << std::endl;        
+    if (stepsSinceCurveShrank > config.maxStallSteps) {
+        return -10;
+    } else if (worldState->nRobotRobotCollisions > 0 || worldState->nRobotBoundaryCollisions > 0) {
+        //std::cout << "worldState->nRobotRobotCollisions: " << worldState->nRobotRobotCollisions << std::endl;
+        //std::cout << "worldState->nRobotBoundaryCollisions: " << worldState->nRobotBoundaryCollisions << std::endl;
+        return -1;
+        
     } else {
-        std::cout << "worldState->nRobotRobotCollisions: " << worldState->nRobotRobotCollisions << std::endl;
-        std::cout << "worldState->nRobotBoundaryCollisions: " << worldState->nRobotBoundaryCollisions << std::endl;
-        curve.score = -1;
+        //std::cout << "beforeDistance: " << beforeDistance << " afterDistance: " << afterDistance << std::endl;
+        return (beforeDistance - afterDistance);
     }
 }
 

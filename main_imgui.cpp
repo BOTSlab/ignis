@@ -134,6 +134,7 @@ void perRobotPlots(size_t robotIndex, const Ignis &ignis, double scaleFactor)
         const auto &curves = ignis.robotIndexToCurvesMap.at(robotIndex);
         for (const Curve &curve : curves)
         {
+            /*
             double markerSize = 1;
             ostringstream oss;
             oss << "Curves for robot " << robotIndex;
@@ -143,6 +144,15 @@ void perRobotPlots(size_t robotIndex, const Ignis &ignis, double scaleFactor)
                 ImPlot::PlotScatter(oss.str().c_str(), &pose.x, &pose.y, 1);
                 markerSize += 0.01;
             }
+            */
+            std::vector<double> curveXs;
+            std::vector<double> curveYs;
+            for (const Pose &pose : curve.poses)
+            {
+                curveXs.push_back(pose.x);
+                curveYs.push_back(pose.y);
+            }
+            ImPlot::PlotLine("Curves", curveXs.data(), curveYs.data(), curveXs.size());
 
             std::ostringstream textStream;
             textStream << curve.score;
@@ -152,7 +162,7 @@ void perRobotPlots(size_t robotIndex, const Ignis &ignis, double scaleFactor)
     }
 
     if (ignis.robotIndexToBestCurveMap.count(robotIndex) > 0) {
-
+        /*
         std::vector<double> curveXs;
         std::vector<double> curveYs;
         const Curve &bestCurve = ignis.robotIndexToBestCurveMap.at(robotIndex);
@@ -161,9 +171,17 @@ void perRobotPlots(size_t robotIndex, const Ignis &ignis, double scaleFactor)
             curveXs.push_back(pose.x);
             curveYs.push_back(pose.y);
         }
+        ImPlot::PlotLine(oss.str().c_str(), curveXs.data(), curveYs.data(), curveXs.size());
+        */
         ostringstream oss;
         oss << "Best Curve for robot " << robotIndex;
-        ImPlot::PlotLine(oss.str().c_str(), curveXs.data(), curveYs.data(), curveXs.size());
+        double markerSize = 2;
+        const Curve &bestCurve = ignis.robotIndexToBestCurveMap.at(robotIndex);
+        for (const Pose &pose : bestCurve.poses)
+        {
+            ImPlot::SetNextMarkerStyle(ImPlotMarker_Asterisk, (int)markerSize, color, IMPLOT_AUTO, color);
+            ImPlot::PlotScatter(oss.str().c_str(), &pose.x, &pose.y, 1);
+        }
     }
 }
 
@@ -178,10 +196,11 @@ void plotWorldState(const char *title, const Ignis &ignis)
 
     ImGui::Begin(title);
     double buffer = 100;
+    double plotScale = 1.55;
     ImPlot::SetNextAxesLimits(-buffer, config.width + buffer, -buffer, config.height + buffer);
-    if (ImPlot::BeginPlot(title, ImVec2(config.width, config.height), ImPlotFlags_::ImPlotFlags_Equal | ImPlotFlags_::ImPlotFlags_NoTitle))
+    if (ImPlot::BeginPlot(title, ImVec2(plotScale*config.width, plotScale*config.height), ImPlotFlags_::ImPlotFlags_Equal | ImPlotFlags_::ImPlotFlags_NoTitle))
     {
-        ImPlot::SetupLegend(ImPlotLocation_South, ImPlotLegendFlags_Outside);
+        ImPlot::SetupLegend(ImPlotLocation_East, ImPlotLegendFlags_Outside);
 
         // Draw the boundaries of the world.
         ImPlot::PlotLine("Boundary", boundaryXs, boundaryYs, 4, ImPlotLineFlags_Loop, ImPlotLineFlags_Shaded);
@@ -231,7 +250,8 @@ void handleControlsWindow(Ignis &ignis, ImGuiIO &io)
 
     // ImGui::SameLine();
 
-    ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+    ImGui::Text("step count: %d", ignis.getStepCount());
+    ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
     ImGui::End();
 }
 
@@ -266,9 +286,10 @@ int main(int, char **)
 #endif
 
     // Create window with graphics context
-    GLFWwindow *window = glfwCreateWindow(1280, 720, "Ignis", nullptr, nullptr);
+    GLFWwindow *window = glfwCreateWindow(2000, 850, "Ignis", nullptr, nullptr);
     if (window == nullptr)
         return 1;
+    glfwSetWindowPos(window, 50, 0);
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1); // Enable vsync
 

@@ -3,6 +3,7 @@
 #include <utility>
 #include <vector>
 #include "WorldState.hpp"
+#include "WorldConfig.hpp"
 
 // Explicitly making this a namespace, not a class to emphasize that there is
 // no "simulator" which maintains state.

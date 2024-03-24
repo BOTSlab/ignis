@@ -9,15 +9,11 @@ using namespace CommonTypes;
 
 namespace CurveGeneration {
 
-using MapOfCurves = std::map<size_t, Curve>;
-
-using MapOfVectorOfCurves = std::map<size_t, std::vector<Curve>>;
-
-double artificialPointDistance = 1.5 * config.robotRadius;
+double polygonKeepProportion = 0.25;
 
 double verticesPerUnitLength = 0.5;
 
-int maxCurvePoints = 100;
+int maxCurvePoints = 1000000;
 
 // Resample the polygon to have verticesPerUnitLength vertices per unit length.
 void resamplePolygon(DilatedPolygon &polygon)
@@ -138,6 +134,7 @@ void bulgePolygonToRobot(DilatedPolygon &polygon, Robot robot)
     centroid.x /= polygon.vertices.size();
     centroid.y /= polygon.vertices.size();
 
+    int i = 0;
     for (auto &pt : polygon.vertices) {
         double dx = pt.x - centroid.x;
         double dy = pt.y - centroid.y;
@@ -171,11 +168,20 @@ void bulgePolygonToRobot(DilatedPolygon &polygon, Robot robot)
         pt = centroid + (pt - centroid) * (1 - factor) + (robotPt - centroid) * factor;
         */
 
-        /* This is the best so far!! */
+        /* This is the best so far!!
         double factor = normalDistribution(angleDiff, 0.1);
         pt.x = centroid.x + (centroidToPointDistance * (1 - factor) + centroidToRobotDistance * factor) * std::cos(centroidToPointAngle);
         pt.y = centroid.y + (centroidToPointDistance * (1 - factor) + centroidToRobotDistance * factor) * std::sin(centroidToPointAngle);
-        
+        */
+
+        /* BETTER
+        pt += (robotPt - pt) * (normalDistribution(angleDiff, 0.1));
+        */
+
+        // Smoothest and simplest!
+        pt += (robotPt - pt) * normalDistribution(i, 5000);
+
+        ++i;
     }
 }
 
@@ -184,6 +190,11 @@ void processPolygon(DilatedPolygon &polygon, Robot robot)
     resamplePolygon(polygon);
     reorderVertices(polygon, robot);
     reverseVec2OrderIfNecessary(polygon, robot);
+
+    // Remove the last (1 - polygonKeepProportion) proportion of the vertices.
+    size_t newSize = static_cast<size_t>(polygon.vertices.size() * polygonKeepProportion);
+    polygon.vertices.resize(newSize);
+
     bulgePolygonToRobot(polygon, robot);
 }
 
@@ -217,18 +228,22 @@ std::vector<Curve> curvesFromDilatedPolygons(std::vector<DilatedPolygon> polygon
 
         curves.push_back(curve);
     }
+    cout << "curvesFromDilatedPolygons - curves.size(): " << curves.size() << endl;
 
     return curves;
 }
 
-// Judges all curves in curvesMap and also returns the best curve for each robot.
+// Judges all curves and return the best curve for this robot.
 Curve judgeCurves(int robotIndex, std::vector<Curve> &curves, std::shared_ptr<WorldState> worldState)
 {
+    if (curves.empty())
+        throw std::runtime_error("No curves to judge.");
+
     // Judge all curves.
     for (auto& curve : curves) {
         // Judge the curve using a copy of the world state.
         auto worldStateToJudge = std::make_shared<WorldState>(*worldState);
-        Judgment::judgeCurve(curve, robotIndex, worldStateToJudge);
+        curve.score = Judgment::judgeCurve(curve, robotIndex, worldStateToJudge);
     }
 
     // Now find the best curve for this robot.
@@ -240,7 +255,7 @@ Curve judgeCurves(int robotIndex, std::vector<Curve> &curves, std::shared_ptr<Wo
             bestCurve = &curve;
         }
     }
-    cout << "bestCurve->score: " << bestCurve->score << endl;
+    cout << "judgeCurves - bestCurve score: " << bestCurve->score << " length: " << bestCurve->poses.size() << endl;
 
     return *bestCurve;
 }

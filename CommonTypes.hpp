@@ -1,4 +1,7 @@
 #pragma once
+#include <vector>
+#include <map>
+#include <math.h>
 
 namespace CommonTypes {
 
@@ -123,5 +126,9 @@ struct Curve {
 
     std::vector<Pose> poses;
 };
+
+using MapOfCurves = std::map<size_t, Curve>;
+
+using MapOfVectorOfCurves = std::map<size_t, std::vector<Curve>>;
 
 }; // namespace CommonTypes
