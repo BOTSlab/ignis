@@ -43,11 +43,13 @@ struct WorldState
     std::vector<Robot> robots;
     std::vector<CircleBody> pucks;
     int nRobotRobotCollisions = 0;
+    int nRobotPuckCollisions = 0;
     int nRobotBoundaryCollisions = 0;
 
     void resetCollisionCounts()
     {
         nRobotRobotCollisions = 0;
+        nRobotPuckCollisions = 0;
         nRobotBoundaryCollisions = 0;
     }
 

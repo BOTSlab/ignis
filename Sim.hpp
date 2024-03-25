@@ -12,7 +12,7 @@ namespace Sim {
 const double dragCoefficient = 0.9;
 
 // Handle collisions between all circle bodies in the world by updating their velocities.
-void dynamicCollisionHandling(std::vector<CircleBody*> allBodies, int &nRobotRobotCollisions)
+void dynamicCollisionHandling(std::vector<CircleBody*> allBodies, int &nRobotRobotCollisions, int &nRobotPuckCollisions)
 {
     for (auto& b1 : allBodies) {
         for (auto& b2 : allBodies) {
@@ -52,13 +52,17 @@ void dynamicCollisionHandling(std::vector<CircleBody*> allBodies, int &nRobotRob
 
                 if (b1->type == BodyType::Robot && b2->type == BodyType::Robot)
                     nRobotRobotCollisions++;
+
+                if ((b1->type == BodyType::Robot && b2->type == BodyType::Puck) |
+                    (b1->type == BodyType::Puck && b2->type == BodyType::Robot))
+                    nRobotPuckCollisions++;
             }
         }
     }
 }
 
 // Handle collisions between all circle bodies by modifying their positions.
-void staticCollisionHandling(std::vector<CircleBody*> allBodies, int &nRobotRobotCollisions)
+void staticCollisionHandling(std::vector<CircleBody*> allBodies, int &nRobotRobotCollisions, int &nRobotPuckCollisions)
 {
     for (auto& b1 : allBodies) {
         for (auto& b2 : allBodies) {
@@ -83,6 +87,10 @@ void staticCollisionHandling(std::vector<CircleBody*> allBodies, int &nRobotRobo
 
                 if (b1->type == BodyType::Robot && b2->type == BodyType::Robot)
                     nRobotRobotCollisions++;
+
+                if ((b1->type == BodyType::Robot && b2->type == BodyType::Puck) |
+                    (b1->type == BodyType::Puck && b2->type == BodyType::Robot))
+                    nRobotPuckCollisions++;
             }
         }
     }
@@ -124,8 +132,8 @@ void update(std::shared_ptr<WorldState> worldState)
 {
     auto allBodies = worldState->getAllCircleBodies();
 
-    dynamicCollisionHandling(allBodies, worldState->nRobotRobotCollisions);
-    staticCollisionHandling(allBodies, worldState->nRobotRobotCollisions);
+    dynamicCollisionHandling(allBodies, worldState->nRobotRobotCollisions, worldState->nRobotPuckCollisions);
+    staticCollisionHandling(allBodies, worldState->nRobotRobotCollisions, worldState->nRobotPuckCollisions);
     boundaryCollisionHandling(allBodies, worldState->nRobotBoundaryCollisions);
 
     for (auto& robot : worldState->robots) {

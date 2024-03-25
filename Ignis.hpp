@@ -4,6 +4,7 @@
 #include "worldInitializer.hpp"
 #include "GeosVoronoi.hpp"
 #include "CurveGeneration.hpp"
+#include "ArcCurveGeneration.hpp"
 #include "Following.hpp"
 
 class Ignis {
@@ -115,24 +116,23 @@ private:
         {
             // First determine whether we should do any processing for this robot.
             // We will only consider skipping if the robot already has a best curve.
-            bool skip = false;
-            if (robotIndexToDilatedPolygonsMap.find(i) == robotIndexToDilatedPolygonsMap.end()) {
-                // The robot has no dilated polygon to judge
-                cout << "Robot " << i << " has no dilated polygon to judge." << endl;
-                skip = true;
-            } else {
-                bool bestCurveExists = robotIndexToBestCurveMap.find(i) != robotIndexToBestCurveMap.end();
-                if (bestCurveExists && !robotIndexToBestCurveMap.at(i).poses.empty()) {
-                    skip = true;
-                }
-            }
-            if (skip) {
+            bool bestCurveExists = robotIndexToBestCurveMap.find(i) != robotIndexToBestCurveMap.end();
+            if (bestCurveExists && !robotIndexToBestCurveMap.at(i).poses.empty()) {
                 // cout << "Skipping robot " << i << endl;
                 continue;
             }
-//skip = false;
+
             cout << "Robot " << i << " is generating curves." << endl;
-            robotIndexToCurvesMap[i] = CurveGeneration::curvesFromDilatedPolygons(robotIndexToDilatedPolygonsMap.at(i), simWorldState->robots[i]);
+
+            if (config.overallMethod == OverallMethod::BulgedPolygonCurves) {
+                robotIndexToCurvesMap[i] = CurveGeneration::curvesFromDilatedPolygons(robotIndexToDilatedPolygonsMap.at(i), simWorldState->robots[i]);
+            } else if (config.overallMethod == OverallMethod::ArcCurves) {
+                robotIndexToCurvesMap[i] = ArcCurveGeneration::arcCurvesForRobot(simWorldState->robots[i]);
+            } else {
+                cout << "Unknown overall method." << endl;
+                return;
+            }
+
             if (robotIndexToCurvesMap[i].empty()) {
                 cout << "Robot " << i << " has no curves to judge." << endl;
             } else {

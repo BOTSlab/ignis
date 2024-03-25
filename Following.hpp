@@ -11,12 +11,17 @@ using namespace CommonTypes;
 
 namespace Following {
 
-void updateControlInput(std::shared_ptr<WorldState> worldState, int i, Curve &curve)
+// Update the control input of robot i based on the given curve.  The curve will
+// be "consumed" as the robot moves along it.  Any consumed poses will be
+// removed from the curve and returned in the output.
+std::vector<Pose> updateControlInput(std::shared_ptr<WorldState> worldState, int i, Curve &curve)
 {
+    std::vector<Pose> consumedPoses;
+
     // std::cout << "START updateControlInput for robot: " << i << "\n";
     if (curve.poses.size() == 0) {
         std::cerr << "updateControlInput - No poses in curve for robot " << i << std::endl;
-        return;
+        return consumedPoses;
     }
 
     // Choose the point at the nose of the robot.
@@ -37,7 +42,7 @@ void updateControlInput(std::shared_ptr<WorldState> worldState, int i, Curve &cu
     }
     if (closestIndex == -1) {
         std::cerr << "No closest point found on curve for robot " << i << std::endl;
-        return;
+        return consumedPoses;
     }
 
     // Determine whether the the point closest to (noseX, noseY) lies to
@@ -50,16 +55,19 @@ void updateControlInput(std::shared_ptr<WorldState> worldState, int i, Curve &cu
     while (angleDifference > M_PI) angleDifference -= 2 * M_PI;
     while (angleDifference < -M_PI) angleDifference += 2 * M_PI;
 
-    //double angularSpeed = config.maxAngularSpeed * angleDifference / M_PI;
-    double angularSpeed = config.maxAngularSpeed * (angleDifference > 0 ? 1 : -1);
+    double angularSpeed = config.maxAngularSpeed * angleDifference / M_PI;
+    //double angularSpeed = config.maxAngularSpeed * (angleDifference > 0 ? 1 : -1);
     worldState->robots[i].controlInput = {config.maxForwardSpeed, angularSpeed};
 
     // Consume the curve by the closest point and all preceding points.
     if (minDistance < config.robotRadius / 4) {
-        // std::cout << "Consuming curve for robot " << i << " at index " << closestIndex << "\n";
+        // Add the poses to be removed to consumedPoses
+        consumedPoses.insert(consumedPoses.end(), curve.poses.begin(), curve.poses.begin() + closestIndex + 1);
         curve.poses.erase(curve.poses.begin(), curve.poses.begin() + closestIndex + 1);
     }
     // std::cout << "END updateControlInput for robot: " << i << "\n";
+
+    return consumedPoses;
 }
 
 void updateControlInputs(std::shared_ptr<WorldState> worldState, MapOfCurves &robotIndexToBestCurves)

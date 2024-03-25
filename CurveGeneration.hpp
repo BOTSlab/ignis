@@ -234,22 +234,24 @@ std::vector<Curve> curvesFromDilatedPolygons(std::vector<DilatedPolygon> polygon
 }
 
 // Judges all curves and return the best curve for this robot.
-Curve judgeCurves(int robotIndex, std::vector<Curve> &curves, std::shared_ptr<WorldState> worldState)
+Curve judgeCurves(int robotIndex, std::vector<Curve> &inputCurves, std::shared_ptr<WorldState> worldState)
 {
-    if (curves.empty())
+    if (inputCurves.empty())
         throw std::runtime_error("No curves to judge.");
 
     // Judge all curves.
-    for (auto& curve : curves) {
+    std::vector<Curve> outputCurves;
+    for (auto& inputCurve : inputCurves) {
         // Judge the curve using a copy of the world state.
         auto worldStateToJudge = std::make_shared<WorldState>(*worldState);
-        curve.score = Judgment::judgeCurve(curve, robotIndex, worldStateToJudge);
+        //curve.score = Judgment::judgeCurve(curve, robotIndex, worldStateToJudge);
+        outputCurves.push_back( Judgment::judgeAndTrim(inputCurve, robotIndex, worldStateToJudge) );
     }
 
     // Now find the best curve for this robot.
     double maxScore = -std::numeric_limits<double>::max();
     Curve* bestCurve = nullptr;
-    for (auto& curve : curves) {
+    for (auto& curve : outputCurves) {
         if (curve.score > maxScore) {
             maxScore = curve.score;
             bestCurve = &curve;
