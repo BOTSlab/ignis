@@ -7,7 +7,7 @@
 
 using namespace CommonTypes;
 
-namespace CurveGeneration {
+namespace CurvesFromDilatedPolygons {
 
 double polygonKeepProportion = 0.25;
 
@@ -54,15 +54,19 @@ void resamplePolygon(DilatedPolygon &polygon)
     polygon.vertices = std::move(newVertices);
 }
 
-// Reorder the vertices of the polygon so that the first Vec2 is the one closest to the robot.
+// Reorder the vertices of the polygon so that the first Vec2 is the one closest 
+// to the robot's nose.
 void reorderVertices(DilatedPolygon &polygon, Robot robot)
 {
+    double noseX = robot.x + config.robotRadius * cos(robot.theta);
+    double noseY = robot.y + config.robotRadius * sin(robot.theta);
+
     // Find the Vec2 closest to the robot
     double minDistance = std::numeric_limits<double>::max();
     size_t closestIndex = 0;
     for (size_t i = 0; i < polygon.vertices.size(); ++i) {
-        double dx = polygon.vertices[i].x - robot.x;
-        double dy = polygon.vertices[i].y - robot.y;
+        double dx = polygon.vertices[i].x - noseX;
+        double dy = polygon.vertices[i].y - noseY;
         double distance = std::sqrt(dx * dx + dy * dy);
         if (distance < minDistance) {
             minDistance = distance;
@@ -79,6 +83,9 @@ void reorderVertices(DilatedPolygon &polygon, Robot robot)
 // vertices.
 void reverseVec2OrderIfNecessary(DilatedPolygon &polygon, Robot robot)
 {
+    double noseX = robot.x + config.robotRadius * cos(robot.theta);
+    double noseY = robot.y + config.robotRadius * sin(robot.theta);
+
     // Find the closest edge to the robot
     double minDistance = std::numeric_limits<double>::max();
     size_t closestIndex = 0;
@@ -88,8 +95,8 @@ void reverseVec2OrderIfNecessary(DilatedPolygon &polygon, Robot robot)
         double dy = polygon.vertices[next_i].y - polygon.vertices[i].y;
         double edgeX = polygon.vertices[i].x + dx / 2;
         double edgeY = polygon.vertices[i].y + dy / 2;
-        double dx2 = edgeX - robot.x;
-        double dy2 = edgeY - robot.y;
+        double dx2 = edgeX - noseX;
+        double dy2 = edgeY - noseY;
         double distance = std::sqrt(dx2 * dx2 + dy2 * dy2);
         if (distance < minDistance) {
             minDistance = distance;
@@ -119,11 +126,14 @@ return std::exp(-0.5 * (x - mean) * (x - mean) / variance);
 }
 
 // Locally distort the polygon so that it bulges inward's or outwards from the
-// polygon's centorid to pass through centre of the robot.  The degree of bulging
-// is determined by the distance to the robot.
+// polygon's centorid to pass through the robot's nose.  The degree of bulging
+// is determined by the distance to the nose.
 void bulgePolygonToRobot(DilatedPolygon &polygon, Robot robot)
 {
-    CommonTypes::Vec2 robotPt = CommonTypes::Vec2(robot.x, robot.y);
+    double noseX = robot.x + config.robotRadius * cos(robot.theta);
+    double noseY = robot.y + config.robotRadius * sin(robot.theta);
+
+    CommonTypes::Vec2 nosePt = CommonTypes::Vec2(noseX, noseY);
 
     // Calculate the centroid of the polygon
     CommonTypes::Vec2 centroid{0.0, 0.0};
@@ -141,8 +151,8 @@ void bulgePolygonToRobot(DilatedPolygon &polygon, Robot robot)
         double centroidToPointAngle = std::atan2(dy, dx);
         double centroidToPointDistance = std::sqrt(dx * dx + dy * dy);
 
-        dx = robot.x - centroid.x;
-        dy = robot.y - centroid.y;
+        dx = noseX - centroid.x;
+        dy = noseY - centroid.y;
         double centroidToRobotAngle = std::atan2(dy, dx);
         double centroidToRobotDistance = std::sqrt(dx * dx + dy * dy);
         double deltaDistance = centroidToRobotDistance - centroidToPointDistance;
@@ -179,7 +189,7 @@ void bulgePolygonToRobot(DilatedPolygon &polygon, Robot robot)
         */
 
         // Smoothest and simplest!
-        pt += (robotPt - pt) * normalDistribution(i, 5000);
+        pt += (nosePt - pt) * normalDistribution(i, 5000);
 
         ++i;
     }
@@ -191,11 +201,15 @@ void processPolygon(DilatedPolygon &polygon, Robot robot)
     reorderVertices(polygon, robot);
     reverseVec2OrderIfNecessary(polygon, robot);
 
-    // Remove the last (1 - polygonKeepProportion) proportion of the vertices.
-    size_t newSize = static_cast<size_t>(polygon.vertices.size() * polygonKeepProportion);
-    polygon.vertices.resize(newSize);
+    if (config.curveBlendMethod == CurveBlendMethod::Bulge) {
+        // Remove the last (1 - polygonKeepProportion) proportion of the vertices.
+        size_t newSize = static_cast<size_t>(polygon.vertices.size() * polygonKeepProportion);
+        polygon.vertices.resize(newSize);
 
-    bulgePolygonToRobot(polygon, robot);
+        bulgePolygonToRobot(polygon, robot);
+    } else {
+        std::cerr << "processPolygon - unknown curve blend method" << std::endl;
+    }
 }
 
 std::vector<Curve> curvesFromDilatedPolygons(std::vector<DilatedPolygon> polygons, Robot robot)
@@ -216,9 +230,10 @@ std::vector<Curve> curvesFromDilatedPolygons(std::vector<DilatedPolygon> polygon
                 double dx = pt.x - lastX;
                 double dy = pt.y - lastY;
                 double theta = std::atan2(dy, dx);
-                curve.poses.push_back({x, y, theta});
+                curve.points.push_back({x, y, theta});
             }
-            if (curve.poses.size() > maxCurvePoints) {
+            if (curve.points.size() > maxCurvePoints) {
+                std::cerr << "curvesFromDilatedPolygons - curve has too many points:" << curve.points.size() << std::endl;
                 break;
             }
             lastX = x;
@@ -228,38 +243,8 @@ std::vector<Curve> curvesFromDilatedPolygons(std::vector<DilatedPolygon> polygon
 
         curves.push_back(curve);
     }
-    cout << "curvesFromDilatedPolygons - curves.size(): " << curves.size() << endl;
 
     return curves;
 }
 
-// Judges all curves and return the best curve for this robot.
-Curve judgeCurves(int robotIndex, std::vector<Curve> &inputCurves, std::shared_ptr<WorldState> worldState)
-{
-    if (inputCurves.empty())
-        throw std::runtime_error("No curves to judge.");
-
-    // Judge all curves.
-    std::vector<Curve> outputCurves;
-    for (auto& inputCurve : inputCurves) {
-        // Judge the curve using a copy of the world state.
-        auto worldStateToJudge = std::make_shared<WorldState>(*worldState);
-        //curve.score = Judgment::judgeCurve(curve, robotIndex, worldStateToJudge);
-        outputCurves.push_back( Judgment::judgeAndTrim(inputCurve, robotIndex, worldStateToJudge) );
-    }
-
-    // Now find the best curve for this robot.
-    double maxScore = -std::numeric_limits<double>::max();
-    Curve* bestCurve = nullptr;
-    for (auto& curve : outputCurves) {
-        if (curve.score > maxScore) {
-            maxScore = curve.score;
-            bestCurve = &curve;
-        }
-    }
-    cout << "judgeCurves - bestCurve score: " << bestCurve->score << " length: " << bestCurve->poses.size() << endl;
-
-    return *bestCurve;
-}
-
-}; // namespace CurveGeneration
+}; // namespace CurvesFromDilatedPolygons

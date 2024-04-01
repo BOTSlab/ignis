@@ -5,7 +5,7 @@
 
 using namespace CommonTypes;
 
-namespace ArcCurveGeneration {
+namespace CurvesFromArcs {
 
 Curve arcCurve(double startX, double startY, double startTheta, double radius) {
 
@@ -16,7 +16,7 @@ Curve arcCurve(double startX, double startY, double startTheta, double radius) {
         for (double t = config.sampleSpacing; t < config.maxTrackLength; t += config.sampleSpacing) {
             double x = startX + t * cos(startTheta);
             double y = startY + t * sin(startTheta);
-            curve.poses.push_back({x, y, startTheta});
+            curve.points.push_back({x, y, startTheta});
         }
         return curve;
     }
@@ -44,7 +44,7 @@ Curve arcCurve(double startX, double startY, double startTheta, double radius) {
             y = startY + radius * (sin(startTheta - M_PI/2.0) + sin(startTheta + M_PI/2.0 - alpha));
             theta = startTheta - alpha;
         }
-        curve.poses.push_back({x, y, theta});
+        curve.points.push_back({x, y, theta});
     }
 
     return curve;
@@ -52,7 +52,7 @@ Curve arcCurve(double startX, double startY, double startTheta, double radius) {
 
 std::vector<Curve> arcCurvesForRobot(Robot robot)
 {
-    int numberOfArcs = 50;
+    int numberOfArcs = 5;
     double maxTurningRadius = 250;
 
     std::vector<Curve> curves;
@@ -70,10 +70,10 @@ std::vector<Curve> arcCurvesForRobot(Robot robot)
     for (int j = 1; j < numberOfArcs; ++j)
     {
         double turningRadius = maxTurningRadius * j / (numberOfArcs - 1);
-        curves.push_back( ArcCurveGeneration::arcCurve(robot.x, robot.y, robot.theta, turningRadius) );
+        curves.push_back( CurvesFromArcs::arcCurve(robot.x, robot.y, robot.theta, turningRadius) );
     }
 
     return curves;
 }
 
-}; // namespace ArcCurveGeneration
+}; // namespace CurvesFromArcs

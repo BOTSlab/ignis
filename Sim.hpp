@@ -1,6 +1,4 @@
 #pragma once
-#include <cmath>
-#include <utility>
 #include <vector>
 #include "WorldState.hpp"
 #include "WorldConfig.hpp"

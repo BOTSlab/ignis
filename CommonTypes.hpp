@@ -120,11 +120,40 @@ struct Pose {
     double theta;
 };
 
-struct Curve {
-    // The score after judgment is applied.
-    double score;
+struct CurvePoint {
+    Pose pose;
+    double score = 0;
+};
 
-    std::vector<Pose> poses;
+class Curve {
+private:
+    int indexToSeek = 0;
+
+public:
+    std::vector<CurvePoint> points;
+
+    double getTotalScore() const {
+        double total = 0;
+        for (const CurvePoint &p : points)
+            total += p.score;
+        return total;
+    }
+
+    bool isFinishedFollowing() const {
+        return indexToSeek == points.size();
+    }
+
+    void advanceIndexToSeek() {
+        indexToSeek++;
+    }
+
+    void setIndexToSeek(int i) {
+        indexToSeek = i;
+    }
+
+    int getIndexToSeek() const {
+        return indexToSeek;
+    }
 };
 
 using MapOfCurves = std::map<size_t, Curve>;

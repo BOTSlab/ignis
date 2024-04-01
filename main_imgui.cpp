@@ -23,6 +23,12 @@
 #include "Ignis.hpp"
 #include "CommonTypes.hpp"
 
+const ImVec4 red = ImVec4(1.0f, 0.0f, 0.0f, 1.00f);
+const ImVec4 green = ImVec4(0.0f, 1.0f, 0.0f, 1.00f);
+const ImVec4 blue = ImVec4(0.0f, 0.0f, 1.0f, 1.00f);
+const ImVec4 gray = ImVec4(0.7f, 0.7f, 0.7f, 1.00f);
+const ImVec4 clear = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
+
 // Global variables.
 int selectedRobotIndex = -1;
 
@@ -91,6 +97,7 @@ void plotInteraction(double scaleFactor, WorldConfig &config, std::__1::shared_p
 
 void perRobotPlots(size_t robotIndex, const Ignis &ignis, double scaleFactor)
 {
+//cout << "perRobotPlots - START" << endl;
     auto worldState = ignis.simWorldState;
     auto config = ignis.config;
     double noseRadius = 0.1 * config.robotRadius;
@@ -134,55 +141,49 @@ void perRobotPlots(size_t robotIndex, const Ignis &ignis, double scaleFactor)
         const auto &curves = ignis.robotIndexToCurvesMap.at(robotIndex);
         for (const Curve &curve : curves)
         {
-            /*
-            double markerSize = 1;
             ostringstream oss;
             oss << "Curves for robot " << robotIndex;
-            for (const Pose &pose : curve.poses)
+            for (const CurvePoint &p : curve.points)
             {
-                ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, (int)markerSize, color, IMPLOT_AUTO, color);
-                ImPlot::PlotScatter(oss.str().c_str(), &pose.x, &pose.y, 1);
-                markerSize += 0.01;
+                if (p.score == -10) {
+                    ImPlot::SetNextMarkerStyle(ImPlotMarker_Diamond, 10, blue, IMPLOT_AUTO, blue);
+                } else if (p.score == -5) {
+                    ImPlot::SetNextMarkerStyle(ImPlotMarker_Cross, 10, red, IMPLOT_AUTO, red);
+                } else if (p.score == 0) {
+                    ImPlot::SetNextMarkerStyle(ImPlotMarker_Cross, 3, gray, IMPLOT_AUTO, gray);
+                } else {
+                    int markerSize = std::max(1, (int)(std::abs(p.score) * 100));
+                    if (p.score < 0) {
+                        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, markerSize, red, IMPLOT_AUTO, red);
+                    } else {
+                        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, markerSize, green, IMPLOT_AUTO, green);
+                    }
+                }
+                ImPlot::PlotScatter(oss.str().c_str(), &p.pose.x, &p.pose.y, 1);
             }
-            */
-            std::vector<double> curveXs;
-            std::vector<double> curveYs;
-            for (const Pose &pose : curve.poses)
-            {
-                curveXs.push_back(pose.x);
-                curveYs.push_back(pose.y);
-            }
-            ImPlot::PlotLine("Curves", curveXs.data(), curveYs.data(), curveXs.size());
 
             std::ostringstream textStream;
-            textStream << curve.score;
-            Pose lastPose = curve.poses.back();
+            textStream << curve.getTotalScore();
+            Pose lastPose = curve.points.back().pose;
             ImPlot::PlotText(textStream.str().c_str(), lastPose.x, lastPose.y);
         }
     }
-
     if (ignis.robotIndexToBestCurveMap.count(robotIndex) > 0) {
-        /*
-        std::vector<double> curveXs;
-        std::vector<double> curveYs;
-        const Curve &bestCurve = ignis.robotIndexToBestCurveMap.at(robotIndex);
-        for (const Pose &pose : bestCurve.poses)
-        {
-            curveXs.push_back(pose.x);
-            curveYs.push_back(pose.y);
-        }
-        ImPlot::PlotLine(oss.str().c_str(), curveXs.data(), curveYs.data(), curveXs.size());
-        */
         ostringstream oss;
         oss << "Best Curve for robot " << robotIndex;
-        double markerSize = 2;
+        double markerSize = 5;
         const Curve &bestCurve = ignis.robotIndexToBestCurveMap.at(robotIndex);
-        for (const Pose &pose : bestCurve.poses)
-        {
-            ImPlot::SetNextMarkerStyle(ImPlotMarker_Asterisk, (int)markerSize, color, IMPLOT_AUTO, color);
-            ImPlot::PlotScatter(oss.str().c_str(), &pose.x, &pose.y, 1);
+        for (const CurvePoint &p : bestCurve.points)
+        for (int i=0; i<bestCurve.points.size(); i++) {
+            const CurvePoint &p = bestCurve.points[i];
+            if (i == bestCurve.getIndexToSeek())
+                ImPlot::SetNextMarkerStyle(ImPlotMarker_Square, (int)2*markerSize, clear, IMPLOT_AUTO, color);
+            else
+                ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, (int)markerSize, clear, IMPLOT_AUTO, color);
+            ImPlot::PlotScatter(oss.str().c_str(), &p.pose.x, &p.pose.y, 1);
         }
     }
+//cout << "perRobotPlots - END" << endl;
 }
 
 void plotWorldState(const char *title, const Ignis &ignis)

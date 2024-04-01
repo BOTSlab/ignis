@@ -9,7 +9,6 @@
     },
     "implot",
     "opengl",
-    "geos",
-    "cgal"
+    "geos"
   ]
 }
