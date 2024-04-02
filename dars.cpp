@@ -20,7 +20,7 @@
 #endif
 #include <GLFW/glfw3.h> // Will drag system OpenGL headers
 
-#include "Ignis.hpp"
+#include "DarsScenario.hpp"
 #include "CommonTypes.hpp"
 
 const ImVec4 red = ImVec4(1.0f, 0.0f, 0.0f, 1.00f);
@@ -95,11 +95,11 @@ void plotInteraction(double scaleFactor, WorldConfig &config, std::__1::shared_p
     }
 }
 
-void perRobotPlots(size_t robotIndex, const Ignis &ignis, double scaleFactor)
+void perRobotPlots(size_t robotIndex, const DarsScenario &darsScenario, double scaleFactor)
 {
 //cout << "perRobotPlots - START" << endl;
-    auto worldState = ignis.simWorldState;
-    auto config = ignis.config;
+    auto worldState = darsScenario.simWorldState;
+    auto config = darsScenario.config;
     double noseRadius = 0.1 * config.robotRadius;
     auto color = ImPlot::GetColormapColor(robotIndex + 2);
 
@@ -118,78 +118,13 @@ void perRobotPlots(size_t robotIndex, const Ignis &ignis, double scaleFactor)
     ImPlot::PlotScatter(robotString.c_str(), &noseX, &noseY, 1);
     ImPlot::PopStyleVar();
 
-    if (ignis.robotIndexToDilatedPolygonsMap.count(robotIndex) > 0) {
-        const auto &dilatedPolygons = ignis.robotIndexToDilatedPolygonsMap.at(robotIndex);
-        for (const DilatedPolygon &dilatedPolygon : dilatedPolygons)
-        {
-            std::vector<double> polygonXs;
-            std::vector<double> polygonYs;
-            for (const CommonTypes::Vec2 &vertex : dilatedPolygon.vertices)
-            {
-                polygonXs.push_back(vertex.x);
-                polygonYs.push_back(vertex.y);
-            }
-            // std::ostringstream oss;
-            // oss << dilatedPolygon.dilation;
-            // ImPlot::PlotLine(oss.str().c_str(), polygonXs.data(), polygonYs.data(), polygonXs.size());
-            ImPlot::PlotLine("Dilated Polygons", polygonXs.data(), polygonYs.data(), polygonXs.size(), ImPlotLineFlags_Loop);
-        }
-    }
-
-    if (ignis.robotIndexToCurvesMap.count(robotIndex) > 0) {
-
-        const auto &curves = ignis.robotIndexToCurvesMap.at(robotIndex);
-        for (const Curve &curve : curves)
-        {
-            ostringstream oss;
-            oss << "Curves for robot " << robotIndex;
-            for (const CurvePoint &p : curve.points)
-            {
-                if (p.score == -10) {
-                    ImPlot::SetNextMarkerStyle(ImPlotMarker_Diamond, 10, blue, IMPLOT_AUTO, blue);
-                } else if (p.score == -5) {
-                    ImPlot::SetNextMarkerStyle(ImPlotMarker_Cross, 10, red, IMPLOT_AUTO, red);
-                } else if (p.score == 0) {
-                    ImPlot::SetNextMarkerStyle(ImPlotMarker_Cross, 3, gray, IMPLOT_AUTO, gray);
-                } else {
-                    int markerSize = std::max(1, (int)(std::abs(p.score) * 100));
-                    if (p.score < 0) {
-                        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, markerSize, red, IMPLOT_AUTO, red);
-                    } else {
-                        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, markerSize, green, IMPLOT_AUTO, green);
-                    }
-                }
-                ImPlot::PlotScatter(oss.str().c_str(), &p.pose.x, &p.pose.y, 1);
-            }
-
-            std::ostringstream textStream;
-            textStream << curve.getTotalScore();
-            Pose lastPose = curve.points.back().pose;
-            ImPlot::PlotText(textStream.str().c_str(), lastPose.x, lastPose.y);
-        }
-    }
-    if (ignis.robotIndexToBestCurveMap.count(robotIndex) > 0) {
-        ostringstream oss;
-        oss << "Best Curve for robot " << robotIndex;
-        double markerSize = 5;
-        const Curve &bestCurve = ignis.robotIndexToBestCurveMap.at(robotIndex);
-        for (const CurvePoint &p : bestCurve.points)
-        for (int i=0; i<bestCurve.points.size(); i++) {
-            const CurvePoint &p = bestCurve.points[i];
-            if (i == bestCurve.getIndexToSeek())
-                ImPlot::SetNextMarkerStyle(ImPlotMarker_Square, (int)2*markerSize, clear, IMPLOT_AUTO, color);
-            else
-                ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, (int)markerSize, clear, IMPLOT_AUTO, color);
-            ImPlot::PlotScatter(oss.str().c_str(), &p.pose.x, &p.pose.y, 1);
-        }
-    }
 //cout << "perRobotPlots - END" << endl;
 }
 
-void plotWorldState(const char *title, const Ignis &ignis)
+void plotWorldState(const char *title, const DarsScenario &darsScenario)
 {
-    auto worldState = ignis.simWorldState;
-    auto config = ignis.config;
+    auto worldState = darsScenario.simWorldState;
+    auto config = darsScenario.config;
     double noseRadius = 0.1 * config.robotRadius;
 
     double boundaryXs[] = {0, static_cast<double>(config.width), static_cast<double>(config.width), 0};
@@ -221,7 +156,7 @@ void plotWorldState(const char *title, const Ignis &ignis)
         ImPlot::PlotScatter("Pucks", puckXs.data(), puckYs.data(), puckXs.size());
 
         for (int i = 0; i < worldState->robots.size(); ++i)
-            perRobotPlots(i, ignis, scaleFactor);
+            perRobotPlots(i, darsScenario, scaleFactor);
 
         plotInteraction(scaleFactor, config, worldState);
 
@@ -230,7 +165,7 @@ void plotWorldState(const char *title, const Ignis &ignis)
     ImGui::End();
 }
 
-void handleControlsWindow(Ignis &ignis, ImGuiIO &io)
+void handleControlsWindow(DarsScenario &darsScenario, ImGuiIO &io)
 {
     static float forwardSpeed = 0.0;
     static float angularSpeed = 0.0;
@@ -238,20 +173,20 @@ void handleControlsWindow(Ignis &ignis, ImGuiIO &io)
     ImGui::Begin("Controls");
 
     if (ImGui::Button("Reset"))
-        ignis.prepareToReset();
+        darsScenario.prepareToReset();
 
-    if (!ignis.isPaused() && ImGui::Button("Pause"))
-        ignis.prepareToPause();
+    if (!darsScenario.isPaused() && ImGui::Button("Pause"))
+        darsScenario.prepareToPause();
 
-    if (ignis.isPaused() && ImGui::Button("Play"))
-        ignis.prepareToUnpause();
+    if (darsScenario.isPaused() && ImGui::Button("Play"))
+        darsScenario.prepareToUnpause();
 
-    if (ignis.isPaused() && ImGui::Button("Step"))
-        ignis.prepareToStepOnce();
+    if (darsScenario.isPaused() && ImGui::Button("Step"))
+        darsScenario.prepareToStepOnce();
 
     // ImGui::SameLine();
 
-    ImGui::Text("step count: %d", ignis.getStepCount());
+    ImGui::Text("step count: %d", darsScenario.getStepCount());
     ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
     ImGui::End();
 }
@@ -287,7 +222,7 @@ int main(int, char **)
 #endif
 
     // Create window with graphics context
-    GLFWwindow *window = glfwCreateWindow(2000, 850, "Ignis", nullptr, nullptr);
+    GLFWwindow *window = glfwCreateWindow(2000, 850, "DarsScenario", nullptr, nullptr);
     if (window == nullptr)
         return 1;
     glfwSetWindowPos(window, 50, 0);
@@ -311,12 +246,12 @@ int main(int, char **)
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init(glsl_version);
 
-    Ignis ignis;
+    DarsScenario darsScenario;
 
     // Main loop
     while (!glfwWindowShouldClose(window))
     {
-        ignis.step();
+        darsScenario.step();
 
         // Poll and handle events (inputs, window resize, etc.)
         // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
@@ -330,9 +265,9 @@ int main(int, char **)
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        handleControlsWindow(ignis, io);
+        handleControlsWindow(darsScenario, io);
 
-        plotWorldState("Simulation", ignis);
+        plotWorldState("Simulation", darsScenario);
         // plotWorldState("Prediction");
 
         // Rendering

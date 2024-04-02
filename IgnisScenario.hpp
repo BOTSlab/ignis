@@ -1,34 +1,20 @@
 #pragma once
-#include "Sim.hpp"
-#include "WorldConfig.hpp"
+#include "Scenario.hpp"
 #include "worldInitializer.hpp"
 #include "GeosVoronoi.hpp"
 #include "CurvesFromDilatedPolygons.hpp"
 #include "CurvesFromArcs.hpp"
 #include "Following.hpp"
 
-class Ignis {
+class IgnisScenario : public Scenario {
 public:
-    WorldConfig config;
     GeosVoronoi::GeosVoronoiBuilder voronoiBuilder;
-
-    std::shared_ptr<WorldState> simWorldState;
     GeosVoronoi::MapOfVectorOfDilatedPolygons robotIndexToDilatedPolygonsMap;
     MapOfVectorOfCurves robotIndexToCurvesMap;
     MapOfCurves robotIndexToBestCurveMap;
 
-    // Simulation state variables.
-    int stepCount = 0;
-    bool paused = false;
-
-    // These are not state variables, but rather flags that are set externally.
-    bool doReset = false;
-    bool doPause = false;
-    bool doUnpause = false;
-    bool doStepOnce = false;
-
-    Ignis()
-        : voronoiBuilder(), config()
+    IgnisScenario()
+        : voronoiBuilder()
     {
         reset();
 
@@ -37,30 +23,8 @@ public:
             Sim::update(simWorldState);
     }
 
-    void step()
+    void update()
     {
-        if (doReset) {
-            doReset = false;
-            reset();
-        }
-        if (doPause) {
-            doPause = false;
-            paused = true;
-        }
-        if (doUnpause) {
-            doUnpause = false;
-            paused = false;
-        }
-        if (doStepOnce) {
-            // We set doStepOnce to false and set paused to true at the end of this function.
-            paused = false;
-        }
-
-        if (paused)
-            return;
-
-        Sim::update(simWorldState);
-
         robotIndexToDilatedPolygonsMap.clear();
         robotIndexToCurvesMap.clear();
 
@@ -74,45 +38,17 @@ public:
         updateBestCurves();
 
         Following::updateControlInputs(simWorldState, robotIndexToBestCurveMap);
-
-        stepCount++;
-
-        if (doStepOnce) {
-            doStepOnce = false;
-            paused = true;
-        }
     }
 
-    void prepareToReset()
+    void reset()
     {
-        doReset = true;
+        simWorldState = worldInitializer();
+
+        robotIndexToDilatedPolygonsMap.clear();
+        robotIndexToCurvesMap.clear();
+        robotIndexToBestCurveMap.clear();
     }
 
-    void prepareToPause()
-    {
-        doPause = true;
-    }
-
-    void prepareToUnpause()
-    {
-        doUnpause = true;
-    }
-
-    void prepareToStepOnce()
-    {
-        doStepOnce = true;
-    }
-
-    bool isPaused() const
-    {
-        return paused;
-    }
-
-    int getStepCount() const
-    {
-        return stepCount;
-    }
-    
 private:
     void updateBestCurves()
     {
@@ -156,14 +92,5 @@ private:
             cout << "No best curves found." << endl;
             return;
         }
-    }
-
-    void reset()
-    {
-        simWorldState = worldInitializer();
-
-        robotIndexToDilatedPolygonsMap.clear();
-        robotIndexToCurvesMap.clear();
-        robotIndexToBestCurveMap.clear();
     }
 };

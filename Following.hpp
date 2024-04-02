@@ -3,6 +3,7 @@
 #include <map>
 #include <cmath>
 #include <utility>
+#include "Angles.hpp"
 #include "WorldState.hpp"
 #include "WorldConfig.hpp"
 #include "CommonTypes.hpp"
