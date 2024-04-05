@@ -173,7 +173,7 @@ void perRobotPlots(size_t robotIndex, const IgnisScenario &ignis, double scaleFa
         oss << "Best Curve for robot " << robotIndex;
         double markerSize = 5;
         const Curve &bestCurve = ignis.robotIndexToBestCurveMap.at(robotIndex);
-        for (const CurvePoint &p : bestCurve.points)
+        //for (const CurvePoint &p : bestCurve.points)
         for (int i=0; i<bestCurve.points.size(); i++) {
             const CurvePoint &p = bestCurve.points[i];
             if (i == bestCurve.getIndexToSeek())

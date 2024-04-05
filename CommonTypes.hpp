@@ -86,14 +86,14 @@ struct Vec2 {
         return x * other.y - y * other.x;
     }   
 
-    double magnitude() const
+    double length() const
     {
         return std::sqrt(x * x + y * y);
     }   
 
     Vec2 normalize() const
     {
-        return *this / magnitude();
+        return *this / length();
     }   
 
     double angle() const
@@ -159,5 +159,18 @@ public:
 using MapOfCurves = std::map<size_t, Curve>;
 
 using MapOfVectorOfCurves = std::map<size_t, std::vector<Curve>>;
+
+struct SensorPosition {
+    std::string name;
+    double forwardOffset, lateralOffset;
+};
+
+struct SensorReading {
+    SensorPosition position;
+    double value;
+};
+
+// A map from robot index to the vector of sensor readings for this time step.
+using MapOfSensorReadings = std::map<size_t, std::vector<SensorReading>>;
 
 }; // namespace CommonTypes

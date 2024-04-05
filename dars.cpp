@@ -118,6 +118,39 @@ void perRobotPlots(size_t robotIndex, const DarsScenario &darsScenario, double s
     ImPlot::PlotScatter(robotString.c_str(), &noseX, &noseY, 1);
     ImPlot::PopStyleVar();
 
+    ImPlot::SetNextLineStyle(color, scaleFactor * config.curveThickness);
+    if (darsScenario.robotIndexToCurveMap.count(robotIndex) > 0) {
+        std::ostringstream oss;
+        oss << "Curve for robot " << robotIndex;
+        const Curve &curve = darsScenario.robotIndexToCurveMap.at(robotIndex);
+        std::vector<double> xVals, yVals;
+        for (int i=0; i<curve.points.size() - 1; i++) {
+            const CurvePoint &p1 = curve.points[i];
+            const CurvePoint &p2 = curve.points[i+1];
+            xVals.push_back(p1.pose.x);
+            yVals.push_back(p1.pose.y);
+            xVals.push_back(p2.pose.x);
+            yVals.push_back(p2.pose.y);
+        }
+        ImPlot::PlotLine(oss.str().c_str(), xVals.data(), yVals.data(), xVals.size());
+    }
+
+    if (darsScenario.robotIndexToSensorReadingsMap.count(robotIndex) > 0) {
+        std::ostringstream oss;
+        oss << "Sensors for robot " << robotIndex;
+        double sensorSize = 0.1 * config.robotRadius;
+
+        for (const SensorReading &sensorReading : darsScenario.robotIndexToSensorReadingsMap.at(robotIndex)) {
+            const SensorPosition &sensorPos = sensorReading.position;
+            Vec2 pos = Vec2(robot.x, robot.y) + Vec2(sensorPos.forwardOffset, sensorPos.lateralOffset).rotate(robot.theta);
+            if (sensorReading.value == 0) {
+                ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, scaleFactor * sensorSize, gray, IMPLOT_AUTO, gray);
+            } else {
+                ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, scaleFactor * sensorSize, color, IMPLOT_AUTO, color);
+            }
+            ImPlot::PlotScatter(oss.str().c_str(), &pos.x, &pos.y, 1);
+        }
+    }
 //cout << "perRobotPlots - END" << endl;
 }
 

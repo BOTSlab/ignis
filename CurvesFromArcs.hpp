@@ -29,7 +29,7 @@ Curve arcCurve(double startX, double startY, double startTheta, double radius) {
 
     // Sample along the arc until we reach the maximum arc length.
     double x, y, theta;
-    for (double arcLength = config.sampleSpacing; arcLength < config.maxTrackLength; arcLength += config.sampleSpacing) {
+    for (double arcLength = 0; arcLength < config.maxTrackLength; arcLength += config.sampleSpacing) {
 
         double alpha = arcLength / radius;
         if (alpha > M_PI)
@@ -52,8 +52,8 @@ Curve arcCurve(double startX, double startY, double startTheta, double radius) {
 
 std::vector<Curve> arcCurvesForRobot(Robot robot)
 {
-    int numberOfArcs = 5;
-    double maxTurningRadius = 250;
+    int numberOfArcs = 2;
+    double maxTurningRadius = 100;
 
     std::vector<Curve> curves;
 

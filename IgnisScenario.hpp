@@ -1,6 +1,6 @@
 #pragma once
 #include "Scenario.hpp"
-#include "worldInitializer.hpp"
+#include "WorldCreation.hpp"
 #include "GeosVoronoi.hpp"
 #include "CurvesFromDilatedPolygons.hpp"
 #include "CurvesFromArcs.hpp"
@@ -42,7 +42,7 @@ public:
 
     void reset()
     {
-        simWorldState = worldInitializer();
+        simWorldState = WorldCreation::randomWorld();
 
         robotIndexToDilatedPolygonsMap.clear();
         robotIndexToCurvesMap.clear();

@@ -4,7 +4,9 @@
 #include "WorldState.hpp"
 #include "WorldConfig.hpp"
 
-std::shared_ptr<WorldState> worldInitializer() {
+namespace WorldCreation {
+
+std::shared_ptr<WorldState> randomWorld() {
     // Create a random number generator
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -26,3 +28,15 @@ std::shared_ptr<WorldState> worldInitializer() {
 
     return world;
 }
+
+std::shared_ptr<WorldState> lineOfRobots() {
+    auto world = std::make_shared<WorldState>();
+
+    // Create a line of robots
+    for (int i = 0; i < config.numberOfRobots; i++)
+        world->robots.push_back(Robot(100 + i * 200, 300, config.robotRadius, 100.0, 0));
+
+    return world;
+}
+
+}; // namespace WorldCreation
