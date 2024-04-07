@@ -37,7 +37,7 @@ static void glfw_error_callback(int error, const char *description)
     fprintf(stderr, "GLFW Error %d: %s\n", error, description);
 }
 
-void plotInteraction(double scaleFactor, WorldConfig &config, std::__1::shared_ptr<WorldState> &worldState)
+void plotInteraction(double scaleFactor, Config &config, std::__1::shared_ptr<WorldState> &worldState)
 {
     if (ImPlot::IsPlotHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Left))
     {
@@ -50,8 +50,8 @@ void plotInteraction(double scaleFactor, WorldConfig &config, std::__1::shared_p
         selectedRobotIndex = -1;
         for (int i = 0; i < worldState->robots.size(); ++i)
         {
-            double robotX = worldState->robots[i].x;
-            double robotY = worldState->robots[i].y;
+            double robotX = worldState->robots[i].pos.x;
+            double robotY = worldState->robots[i].pos.y;
             double distance = sqrt((mouseX - robotX) * (mouseX - robotX) + (mouseY - robotY) * (mouseY - robotY));
 
             // If the mouse click is within the robot, set the selectedRobotIndex to the current robot index
@@ -68,8 +68,8 @@ void plotInteraction(double scaleFactor, WorldConfig &config, std::__1::shared_p
     {
         ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.25f);
         ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 1.1 * scaleFactor * config.robotRadius, ImPlot::GetColormapColor(1), IMPLOT_AUTO, ImPlot::GetColormapColor(1));
-        double robotX = worldState->robots[selectedRobotIndex].x;
-        double robotY = worldState->robots[selectedRobotIndex].y;
+        double robotX = worldState->robots[selectedRobotIndex].pos.x;
+        double robotY = worldState->robots[selectedRobotIndex].pos.y;
         ImPlot::PlotScatter("Selected Robot", &robotX, &robotY, 1);
 
         // The selected robot will be manually controlled, with zero speed by default.
@@ -110,10 +110,10 @@ void perRobotPlots(size_t robotIndex, const IgnisScenario &ignis, double scaleFa
     std::ostringstream oss;
     oss << "Robot " << robotIndex;
     std::string robotString = oss.str();
-    ImPlot::PlotScatter(robotString.c_str(), &robot.x, &robot.y, 1);
+    ImPlot::PlotScatter(robotString.c_str(), &robot.pos.x, &robot.pos.y, 1);
 
-    double noseX = robot.x + (config.robotRadius - noseRadius) * cos(robot.theta);
-    double noseY = robot.y + (config.robotRadius - noseRadius) * sin(robot.theta);
+    double noseX = robot.pos.x + (config.robotRadius - noseRadius) * cos(robot.theta);
+    double noseY = robot.pos.y + (config.robotRadius - noseRadius) * sin(robot.theta);
     ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, scaleFactor * noseRadius, color, IMPLOT_AUTO, color);
     ImPlot::PlotScatter(robotString.c_str(), &noseX, &noseY, 1);
     ImPlot::PopStyleVar();
@@ -214,8 +214,8 @@ void plotWorldState(const char *title, const IgnisScenario &ignis)
         std::vector<double> puckXs, puckYs;
         for (int i = 0; i < worldState->pucks.size(); ++i)
         {
-            puckXs.push_back(worldState->pucks[i].x);
-            puckYs.push_back(worldState->pucks[i].y);
+            puckXs.push_back(worldState->pucks[i].pos.x);
+            puckYs.push_back(worldState->pucks[i].pos.y);
         }
         ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, scaleFactor * config.puckRadius, ImPlot::GetColormapColor(1), IMPLOT_AUTO, ImPlot::GetColormapColor(1));
         ImPlot::PlotScatter("Pucks", puckXs.data(), puckYs.data(), puckXs.size());

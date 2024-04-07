@@ -4,14 +4,14 @@
 #include <cmath>
 #include <utility>
 #include "WorldState.hpp"
-#include "WorldConfig.hpp"
-#include "CommonTypes.hpp"
+#include "Config.hpp"
+#include "CurveTypes.hpp"
 
-using namespace CommonTypes;
+using namespace CurveTypes;
 
-namespace Control {
+namespace CurveFollowingControl {
 
-void setControls(Robot &robot, const std::vector<SensorReading> &readings)
+void setControls(Robot &robot, const std::vector<CurveSensorReading> &readings)
 {
     double l = readings[0].value;
     double cl = readings[1].value;
@@ -28,15 +28,15 @@ void setControls(Robot &robot, const std::vector<SensorReading> &readings)
     robot.controlInput = {config.maxForwardSpeed, 0.05 * config.maxAngularSpeed * balanceFactor};
 }
 
-void allRobotsSetControls(std::shared_ptr<WorldState> worldState, MapOfSensorReadings &robotIndexToSensorReadings)
+void allRobotsSetControls(std::shared_ptr<WorldState> worldState, MapOfCurveSensorReadings &robotIndexToSensorReadings)
 {
     for (const auto &robotIndexAndSensorReadings : robotIndexToSensorReadings)
     {
         size_t robotIndex = robotIndexAndSensorReadings.first;
-        const std::vector<SensorReading> &sensorReadings = robotIndexAndSensorReadings.second;
+        const std::vector<CurveSensorReading> &sensorReadings = robotIndexAndSensorReadings.second;
 
         setControls(worldState->robots[robotIndex], sensorReadings);
     }
 }
 
-}; // namespace Control
+}; // namespace CurveFollowingControl

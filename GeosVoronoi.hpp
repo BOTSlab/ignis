@@ -4,15 +4,15 @@
 #include <geos/geom/GeometryFactory.h>
 #include <geos/triangulate/VoronoiDiagramBuilder.h>
 #include <geos/geom/CoordinateArraySequence.h>
-#include "CommonTypes.hpp"
+#include "CurveTypes.hpp"
 #include "WorldState.hpp"
-#include "WorldConfig.hpp"
+#include "Config.hpp"
 #include "Angles.hpp"
 
 using namespace geos::geom;
 using namespace geos::triangulate;
 
-using DilatedPolygon = CommonTypes::DilatedPolygon;
+using DilatedPolygon = CurveTypes::DilatedPolygon;
 using Vec2 = CommonTypes::Vec2;
 
 namespace GeosVoronoi {
@@ -116,7 +116,7 @@ private:
             }
 
             auto robot = worldState->robots[robotIndex];
-            auto robotPoint = factory->createPoint(Coordinate(worldState->robots[robotIndex].x, worldState->robots[robotIndex].y));
+            auto robotPoint = factory->createPoint(Coordinate(worldState->robots[robotIndex].pos.x, worldState->robots[robotIndex].pos.y));
 
             // Determine the centroid of the clipped polygon
             auto centroid = clippedPolygon->getCentroid();

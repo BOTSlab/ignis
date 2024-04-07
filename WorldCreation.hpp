@@ -2,7 +2,7 @@
 #include <random>
 #include <memory>
 #include "WorldState.hpp"
-#include "WorldConfig.hpp"
+#include "Config.hpp"
 
 namespace WorldCreation {
 

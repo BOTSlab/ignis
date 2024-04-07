@@ -20,7 +20,7 @@
 #endif
 #include <GLFW/glfw3.h> // Will drag system OpenGL headers
 
-#include "DarsScenario.hpp"
+#include "AlifeScenario.hpp"
 #include "CommonTypes.hpp"
 
 const ImVec4 red = ImVec4(1.0f, 0.0f, 0.0f, 1.00f);
@@ -37,7 +37,7 @@ static void glfw_error_callback(int error, const char *description)
     fprintf(stderr, "GLFW Error %d: %s\n", error, description);
 }
 
-void plotInteraction(double scaleFactor, WorldConfig &config, std::__1::shared_ptr<WorldState> &worldState)
+void plotInteraction(double scaleFactor, Config &config, std::__1::shared_ptr<WorldState> &worldState)
 {
     if (ImPlot::IsPlotHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Left))
     {
@@ -50,8 +50,8 @@ void plotInteraction(double scaleFactor, WorldConfig &config, std::__1::shared_p
         selectedRobotIndex = -1;
         for (int i = 0; i < worldState->robots.size(); ++i)
         {
-            double robotX = worldState->robots[i].x;
-            double robotY = worldState->robots[i].y;
+            double robotX = worldState->robots[i].pos.x;
+            double robotY = worldState->robots[i].pos.y;
             double distance = sqrt((mouseX - robotX) * (mouseX - robotX) + (mouseY - robotY) * (mouseY - robotY));
 
             // If the mouse click is within the robot, set the selectedRobotIndex to the current robot index
@@ -68,8 +68,8 @@ void plotInteraction(double scaleFactor, WorldConfig &config, std::__1::shared_p
     {
         ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.25f);
         ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 1.1 * scaleFactor * config.robotRadius, ImPlot::GetColormapColor(1), IMPLOT_AUTO, ImPlot::GetColormapColor(1));
-        double robotX = worldState->robots[selectedRobotIndex].x;
-        double robotY = worldState->robots[selectedRobotIndex].y;
+        double robotX = worldState->robots[selectedRobotIndex].pos.x;
+        double robotY = worldState->robots[selectedRobotIndex].pos.y;
         ImPlot::PlotScatter("Selected Robot", &robotX, &robotY, 1);
 
         // The selected robot will be manually controlled, with zero speed by default.
@@ -95,11 +95,11 @@ void plotInteraction(double scaleFactor, WorldConfig &config, std::__1::shared_p
     }
 }
 
-void perRobotPlots(size_t robotIndex, const DarsScenario &darsScenario, double scaleFactor)
+void perRobotPlots(size_t robotIndex, const AlifeScenario &alifeScenario, double scaleFactor)
 {
 //cout << "perRobotPlots - START" << endl;
-    auto worldState = darsScenario.simWorldState;
-    auto config = darsScenario.config;
+    auto worldState = alifeScenario.simWorldState;
+    auto config = alifeScenario.config;
     double noseRadius = 0.1 * config.robotRadius;
     auto color = ImPlot::GetColormapColor(robotIndex + 2);
 
@@ -110,54 +110,39 @@ void perRobotPlots(size_t robotIndex, const DarsScenario &darsScenario, double s
     std::ostringstream oss;
     oss << "Robot " << robotIndex;
     std::string robotString = oss.str();
-    ImPlot::PlotScatter(robotString.c_str(), &robot.x, &robot.y, 1);
+    ImPlot::PlotScatter(robotString.c_str(), &robot.pos.x, &robot.pos.y, 1);
 
-    double noseX = robot.x + (config.robotRadius - noseRadius) * cos(robot.theta);
-    double noseY = robot.y + (config.robotRadius - noseRadius) * sin(robot.theta);
+    double noseX = robot.pos.x + (config.robotRadius - noseRadius) * cos(robot.theta);
+    double noseY = robot.pos.y + (config.robotRadius - noseRadius) * sin(robot.theta);
     ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, scaleFactor * noseRadius, color, IMPLOT_AUTO, color);
     ImPlot::PlotScatter(robotString.c_str(), &noseX, &noseY, 1);
     ImPlot::PopStyleVar();
 
-    ImPlot::SetNextLineStyle(color, scaleFactor * config.curveThickness);
-    if (darsScenario.robotIndexToCurveMap.count(robotIndex) > 0) {
-        std::ostringstream oss;
-        oss << "Curve for robot " << robotIndex;
-        const Curve &curve = darsScenario.robotIndexToCurveMap.at(robotIndex);
-        std::vector<double> xVals, yVals;
-        for (int i=0; i<curve.points.size() - 1; i++) {
-            const CurvePoint &p1 = curve.points[i];
-            const CurvePoint &p2 = curve.points[i+1];
-            xVals.push_back(p1.pose.x);
-            yVals.push_back(p1.pose.y);
-            xVals.push_back(p2.pose.x);
-            yVals.push_back(p2.pose.y);
-        }
-        ImPlot::PlotLine(oss.str().c_str(), xVals.data(), yVals.data(), xVals.size());
-    }
-
-    if (darsScenario.robotIndexToSensorReadingsMap.count(robotIndex) > 0) {
+    if (alifeScenario.robotIndexToSensorReadingMap.count(robotIndex) > 0) {
         std::ostringstream oss;
         oss << "Sensors for robot " << robotIndex;
         double sensorSize = 0.1 * config.robotRadius;
 
-        for (const SensorReading &sensorReading : darsScenario.robotIndexToSensorReadingsMap.at(robotIndex)) {
-            const SensorPosition &sensorPos = sensorReading.position;
-            Vec2 pos = Vec2(robot.x, robot.y) + Vec2(sensorPos.forwardOffset, sensorPos.lateralOffset).rotate(robot.theta);
-            if (sensorReading.value == 0) {
-                ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, scaleFactor * sensorSize, gray, IMPLOT_AUTO, gray);
-            } else {
-                ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, scaleFactor * sensorSize, color, IMPLOT_AUTO, color);
-            }
-            ImPlot::PlotScatter(oss.str().c_str(), &pos.x, &pos.y, 1);
+        const AlifeSensorReading &sensorReading = alifeScenario.robotIndexToSensorReadingMap.at(robotIndex);
+        Vec2 segmentStart = robot.pos + Vec2(cos(robot.theta), sin(robot.theta)) * (robot.radius + config.segmentSensorOffset);
+        Vec2 segmentEnd = segmentStart + Vec2(cos(robot.theta), sin(robot.theta)) * config.segmentSensorLength;
+        std::vector<double> xs = {segmentStart.x, segmentEnd.x};
+        std::vector<double> ys = {segmentStart.y, segmentEnd.y};
+
+        if (sensorReading.hit) {
+            ImPlot::SetNextLineStyle(color, 2);
+        } else {
+            ImPlot::SetNextLineStyle(gray, 1);
         }
+        ImPlot::PlotLine("SegmentSensors", xs.data(), ys.data(), 2);
     }
 //cout << "perRobotPlots - END" << endl;
 }
 
-void plotWorldState(const char *title, const DarsScenario &darsScenario)
+void plotWorldState(const char *title, const AlifeScenario &alifeScenario)
 {
-    auto worldState = darsScenario.simWorldState;
-    auto config = darsScenario.config;
+    auto worldState = alifeScenario.simWorldState;
+    auto config = alifeScenario.config;
     double noseRadius = 0.1 * config.robotRadius;
 
     double boundaryXs[] = {0, static_cast<double>(config.width), static_cast<double>(config.width), 0};
@@ -182,14 +167,14 @@ void plotWorldState(const char *title, const DarsScenario &darsScenario)
         std::vector<double> puckXs, puckYs;
         for (int i = 0; i < worldState->pucks.size(); ++i)
         {
-            puckXs.push_back(worldState->pucks[i].x);
-            puckYs.push_back(worldState->pucks[i].y);
+            puckXs.push_back(worldState->pucks[i].pos.x);
+            puckYs.push_back(worldState->pucks[i].pos.y);
         }
         ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, scaleFactor * config.puckRadius, ImPlot::GetColormapColor(1), IMPLOT_AUTO, ImPlot::GetColormapColor(1));
         ImPlot::PlotScatter("Pucks", puckXs.data(), puckYs.data(), puckXs.size());
 
         for (int i = 0; i < worldState->robots.size(); ++i)
-            perRobotPlots(i, darsScenario, scaleFactor);
+            perRobotPlots(i, alifeScenario, scaleFactor);
 
         plotInteraction(scaleFactor, config, worldState);
 
@@ -198,7 +183,7 @@ void plotWorldState(const char *title, const DarsScenario &darsScenario)
     ImGui::End();
 }
 
-void handleControlsWindow(DarsScenario &darsScenario, ImGuiIO &io)
+void handleControlsWindow(AlifeScenario &alifeScenario, ImGuiIO &io)
 {
     static float forwardSpeed = 0.0;
     static float angularSpeed = 0.0;
@@ -206,20 +191,20 @@ void handleControlsWindow(DarsScenario &darsScenario, ImGuiIO &io)
     ImGui::Begin("Controls");
 
     if (ImGui::Button("Reset"))
-        darsScenario.prepareToReset();
+        alifeScenario.prepareToReset();
 
-    if (!darsScenario.isPaused() && ImGui::Button("Pause"))
-        darsScenario.prepareToPause();
+    if (!alifeScenario.isPaused() && ImGui::Button("Pause"))
+        alifeScenario.prepareToPause();
 
-    if (darsScenario.isPaused() && ImGui::Button("Play"))
-        darsScenario.prepareToUnpause();
+    if (alifeScenario.isPaused() && ImGui::Button("Play"))
+        alifeScenario.prepareToUnpause();
 
-    if (darsScenario.isPaused() && ImGui::Button("Step"))
-        darsScenario.prepareToStepOnce();
+    if (alifeScenario.isPaused() && ImGui::Button("Step"))
+        alifeScenario.prepareToStepOnce();
 
     // ImGui::SameLine();
 
-    ImGui::Text("step count: %d", darsScenario.getStepCount());
+    ImGui::Text("step count: %d", alifeScenario.getStepCount());
     ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
     ImGui::End();
 }
@@ -255,7 +240,7 @@ int main(int, char **)
 #endif
 
     // Create window with graphics context
-    GLFWwindow *window = glfwCreateWindow(2000, 850, "DarsScenario", nullptr, nullptr);
+    GLFWwindow *window = glfwCreateWindow(2000, 850, "AlifeScenario", nullptr, nullptr);
     if (window == nullptr)
         return 1;
     glfwSetWindowPos(window, 50, 0);
@@ -279,12 +264,12 @@ int main(int, char **)
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init(glsl_version);
 
-    DarsScenario darsScenario;
+    AlifeScenario alifeScenario;
 
     // Main loop
     while (!glfwWindowShouldClose(window))
     {
-        darsScenario.step();
+        alifeScenario.step();
 
         // Poll and handle events (inputs, window resize, etc.)
         // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
@@ -298,9 +283,9 @@ int main(int, char **)
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        handleControlsWindow(darsScenario, io);
+        handleControlsWindow(alifeScenario, io);
 
-        plotWorldState("Simulation", darsScenario);
+        plotWorldState("Simulation", alifeScenario);
         // plotWorldState("Prediction");
 
         // Rendering

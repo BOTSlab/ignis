@@ -5,12 +5,12 @@
 #include <utility>
 #include "Angles.hpp"
 #include "WorldState.hpp"
-#include "WorldConfig.hpp"
-#include "CommonTypes.hpp"
+#include "Config.hpp"
+#include "CurveTypes.hpp"
 
-using namespace CommonTypes;
+using namespace CurveTypes;
 
-namespace Following {
+namespace CurveFollowing {
 
 // Update the control input of robot i based on the given curve.  The curve's
 // indexToSeek value will be moved along the curve until it reaches the end.
@@ -26,8 +26,8 @@ void updateControlInput(std::shared_ptr<WorldState> worldState, int i, Curve &cu
     }
 
     // Choose the point at the nose of the robot.
-    double noseX = worldState->robots[i].x + config.robotRadius * cos(worldState->robots[i].theta);
-    double noseY = worldState->robots[i].y + config.robotRadius * sin(worldState->robots[i].theta);
+    double noseX = worldState->robots[i].pos.x + config.robotRadius * cos(worldState->robots[i].theta);
+    double noseY = worldState->robots[i].pos.y + config.robotRadius * sin(worldState->robots[i].theta);
 
     // Start at indexToSeek, find the point on the curve closest to (noseX, noseY).
     double minDistance = std::numeric_limits<double>::max();
@@ -52,8 +52,8 @@ void updateControlInput(std::shared_ptr<WorldState> worldState, int i, Curve &cu
 
     // Determine whether the point found above lies to the left or right of the 
     // line from the robot's current position through its nose.
-    double dx = curve.points[closestIndex].pose.x - worldState->robots[i].x;
-    double dy = curve.points[closestIndex].pose.y - worldState->robots[i].y;
+    double dx = curve.points[closestIndex].pose.x - worldState->robots[i].pos.x;
+    double dy = curve.points[closestIndex].pose.y - worldState->robots[i].pos.y;
     double angle = std::atan2(dy, dx);
     //double angleDifference = angle - worldState->robots[i].theta;
     double angleDifference = Angles::getSmallestSignedAngularDifference(angle, worldState->robots[i].theta);
@@ -88,4 +88,4 @@ void updateControlInputs(std::shared_ptr<WorldState> worldState, MapOfCurves &ro
     }
 }
 
-}; // namespace Following
+}; // namespace CurveFollowing

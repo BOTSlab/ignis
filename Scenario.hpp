@@ -1,10 +1,10 @@
 #pragma once
 #include "Sim.hpp"
-#include "WorldConfig.hpp"
+#include "Config.hpp"
 
 class Scenario {
 public:
-    WorldConfig config;
+    Config config;
 
     std::shared_ptr<WorldState> simWorldState;
 

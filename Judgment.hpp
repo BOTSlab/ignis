@@ -1,15 +1,15 @@
 #pragma once
 #include <vector>
 #include <cmath>
-#include "Following.hpp"
+#include "CurveFollowing.hpp"
 #include "Sim.hpp"
-#include "WorldConfig.hpp"
+#include "Config.hpp"
 #include "WorldState.hpp"
-#include "CommonTypes.hpp"
+#include "CurveTypes.hpp"
 
-using namespace CommonTypes;
+using namespace CurveTypes;
 
-using namespace Following;
+using namespace CurveFollowing;
 
 namespace Judgment {
 
@@ -18,8 +18,8 @@ double averagePuckDistanceToGoal(std::shared_ptr<WorldState> worldState, double 
     int puckCount = 0;
 
     for (const auto& puck : worldState->pucks) {
-        double dx = puck.x - goalX;
-        double dy = puck.y - goalY;
+        double dx = puck.pos.x - goalX;
+        double dy = puck.pos.y - goalY;
         totalDistance += std::sqrt(dx * dx + dy * dy);
         puckCount++;
     }
@@ -129,7 +129,7 @@ void judgeCurve(Curve& curve, int robotIndex, std::shared_ptr<WorldState> worldS
 // std::cout << "curve.getIndexToSeek(): " << curve.getIndexToSeek() << std::endl;
 
         Sim::update(worldState);
-        Following::updateControlInput(worldState, robotIndex, curve);
+        CurveFollowing::updateControlInput(worldState, robotIndex, curve);
 
         double apd = averagePuckDistanceToGoal(worldState, config.puckGoalX, config.puckGoalY);
 

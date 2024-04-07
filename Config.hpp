@@ -12,23 +12,23 @@ enum class CurveBlendMethod
     Bulge
 };
 
-struct WorldConfig
+struct Config
 {
     const OverallMethod overallMethod = OverallMethod::DilatedPolygonCurves;
     const CurveBlendMethod curveBlendMethod = CurveBlendMethod::Bulge;
 
-    const int width = 800;
+    const int width = 1000;
     const int height = 600;
     const int coldStartSteps = 100;
-    const int numberOfRobots = 4;
-    const int numberOfPucks = 0;
-    const double robotRadius = 30;
-    const double puckRadius = 25;
+    const int numberOfRobots = 20;
+    const int numberOfPucks = 60;
+    const double robotRadius = 10;
+    const double puckRadius = 20;
     const double maxForwardSpeed = 0.1;
     const double maxAngularSpeed = 1.5; //0.1;
 
     // For curve judgment.
-    const double puckGoalX = 400;
+    const double puckGoalX = 300;
     const double puckGoalY = 300;
     const int maxStallSteps = 1000;
 
@@ -39,7 +39,8 @@ struct WorldConfig
     const double maxTrackLength = 400;
     const double sampleSpacing = 50;
 
-    // For sensing.
+    // For line sensing.
+    /*
     const double curveThickness = 20;
     const double forwardOffset = robotRadius;
     const double maxLateralOffset = 0.5 * robotRadius;
@@ -49,4 +50,9 @@ struct WorldConfig
         {"CentreRight", forwardOffset, 0.5*maxLateralOffset},
         {"Right", forwardOffset, maxLateralOffset}
     };
+    */
+
+    // For Alife scenario.
+    const double segmentSensorOffset = 0.1;
+    const double segmentSensorLength = 100;
 } config;

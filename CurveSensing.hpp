@@ -4,12 +4,12 @@
 #include <cmath>
 #include <utility>
 #include "WorldState.hpp"
-#include "WorldConfig.hpp"
+#include "Config.hpp"
 #include "CommonTypes.hpp"
 
 using namespace CommonTypes;
 
-namespace Sensing {
+namespace LineSensing {
 
 // Compute the distance from point x to the line segment defined by points p1 and p2.
 double distToSegment(const Vec2& x, const Vec2& p1, const Vec2& p2)
@@ -83,4 +83,4 @@ MapOfSensorReadings allRobotsSenseTheirCurves(std::shared_ptr<WorldState> worldS
     return robotIndexToSensorReadings;
 }
 
-}; // namespace Sensing
+}; // namespace LineSensing

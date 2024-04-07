@@ -4,7 +4,7 @@
 #include "GeosVoronoi.hpp"
 #include "CurvesFromDilatedPolygons.hpp"
 #include "CurvesFromArcs.hpp"
-#include "Following.hpp"
+#include "CurveFollowing.hpp"
 
 class IgnisScenario : public Scenario {
 public:
@@ -37,7 +37,7 @@ public:
 
         updateBestCurves();
 
-        Following::updateControlInputs(simWorldState, robotIndexToBestCurveMap);
+        CurveFollowing::updateControlInputs(simWorldState, robotIndexToBestCurveMap);
     }
 
     void reset()
@@ -79,7 +79,7 @@ private:
                 robotIndexToBestCurveMap[i] = Judgment::judgeCurves(i, robotIndexToCurvesMap.at(i), simWorldState);
             }
 
-            paused = true;
+            // paused = true;
 
             // Reset the index to seek for the best curve.  This readies the robot
             // to follow this curve from its beginning to its end.  This is necessary

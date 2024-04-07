@@ -93,6 +93,7 @@
         "shared_mutex": "cpp",
         "strstream": "cpp",
         "typeindex": "cpp",
-        "execution": "cpp"
+        "execution": "cpp",
+        "__memory": "cpp"
     }
 }

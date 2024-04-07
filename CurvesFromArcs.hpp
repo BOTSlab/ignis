@@ -1,7 +1,7 @@
 #pragma once
 #include "CommonTypes.hpp"
 #include "WorldState.hpp"
-#include "WorldConfig.hpp"
+#include "Config.hpp"
 
 using namespace CommonTypes;
 
@@ -70,7 +70,7 @@ std::vector<Curve> arcCurvesForRobot(Robot robot)
     for (int j = 1; j < numberOfArcs; ++j)
     {
         double turningRadius = maxTurningRadius * j / (numberOfArcs - 1);
-        curves.push_back( CurvesFromArcs::arcCurve(robot.x, robot.y, robot.theta, turningRadius) );
+        curves.push_back( CurvesFromArcs::arcCurve(robot.pos.x, robot.pos.y, robot.theta, turningRadius) );
     }
 
     return curves;

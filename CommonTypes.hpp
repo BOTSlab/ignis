@@ -109,68 +109,41 @@ struct Vec2 {
     }   
 };
 
-struct DilatedPolygon {
-    double dilation;
-    std::vector<CommonTypes::Vec2> vertices;
+enum class BodyType
+{
+    Robot,
+    Puck
 };
 
-struct Pose {
-    double x;
-    double y;
+struct CircleBody
+{
+    BodyType type;
+    Vec2 pos;
+    double radius, mass;
+    Vec2 vel;
+
+    CircleBody(BodyType type, double x, double y, double radius, double mass, double vx = 0.0, double vy = 0.0)
+        : type(type), pos(x, y), radius(radius), mass(mass), vel(vx, vy) {}
+};
+
+struct ControlInput
+{
+    double forwardSpeed, angularSpeed;
+
+    ControlInput(double forwardSpeed = 0.0, double angularSpeed = 0.0)
+        : forwardSpeed(forwardSpeed), angularSpeed(angularSpeed) {}
+};
+
+struct Robot : public CircleBody
+{
+    Robot(double x, double y, double radius, double mass, double theta, double vx = 0.0, double vy = 0.0)
+        : CircleBody(BodyType::Robot, x, y, radius, mass, vx, vy), theta(theta), controlInput(), siteX(x), siteY(y) {}
+
     double theta;
+    ControlInput controlInput;
+
+    // Represents the site for this robot's Voronoi cell.
+    double siteX, siteY;
 };
-
-struct CurvePoint {
-    Pose pose;
-    double score = 0;
-};
-
-class Curve {
-private:
-    int indexToSeek = 0;
-
-public:
-    std::vector<CurvePoint> points;
-
-    double getTotalScore() const {
-        double total = 0;
-        for (const CurvePoint &p : points)
-            total += p.score;
-        return total;
-    }
-
-    bool isFinishedFollowing() const {
-        return indexToSeek == points.size();
-    }
-
-    void advanceIndexToSeek() {
-        indexToSeek++;
-    }
-
-    void setIndexToSeek(int i) {
-        indexToSeek = i;
-    }
-
-    int getIndexToSeek() const {
-        return indexToSeek;
-    }
-};
-
-using MapOfCurves = std::map<size_t, Curve>;
-
-using MapOfVectorOfCurves = std::map<size_t, std::vector<Curve>>;
-
-struct SensorPosition {
-    std::string name;
-    double forwardOffset, lateralOffset;
-};
-
-struct SensorReading {
-    SensorPosition position;
-    double value;
-};
-
-// A map from robot index to the vector of sensor readings for this time step.
-using MapOfSensorReadings = std::map<size_t, std::vector<SensorReading>>;
 
 }; // namespace CommonTypes

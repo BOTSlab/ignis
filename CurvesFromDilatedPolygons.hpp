@@ -1,11 +1,11 @@
 #pragma once
 #include <map>
-#include "CommonTypes.hpp"
-#include "WorldConfig.hpp"
+#include "CurveTypes.hpp"
+#include "Config.hpp"
 #include "GeosVoronoi.hpp"
 #include "Judgment.hpp"
 
-using namespace CommonTypes;
+using namespace CurveTypes;
 
 namespace CurvesFromDilatedPolygons {
 
@@ -58,8 +58,8 @@ void resamplePolygon(DilatedPolygon &polygon)
 // to the robot's nose.
 void reorderVertices(DilatedPolygon &polygon, Robot robot)
 {
-    double noseX = robot.x + config.robotRadius * cos(robot.theta);
-    double noseY = robot.y + config.robotRadius * sin(robot.theta);
+    double noseX = robot.pos.x + config.robotRadius * cos(robot.theta);
+    double noseY = robot.pos.y + config.robotRadius * sin(robot.theta);
 
     // Find the Vec2 closest to the robot
     double minDistance = std::numeric_limits<double>::max();
@@ -83,8 +83,8 @@ void reorderVertices(DilatedPolygon &polygon, Robot robot)
 // vertices.
 void reverseVec2OrderIfNecessary(DilatedPolygon &polygon, Robot robot)
 {
-    double noseX = robot.x + config.robotRadius * cos(robot.theta);
-    double noseY = robot.y + config.robotRadius * sin(robot.theta);
+    double noseX = robot.pos.x + config.robotRadius * cos(robot.theta);
+    double noseY = robot.pos.y + config.robotRadius * sin(robot.theta);
 
     // Find the closest edge to the robot
     double minDistance = std::numeric_limits<double>::max();
@@ -130,8 +130,8 @@ return std::exp(-0.5 * (x - mean) * (x - mean) / variance);
 // is determined by the distance to the nose.
 void bulgePolygonToRobot(DilatedPolygon &polygon, Robot robot)
 {
-    double noseX = robot.x + config.robotRadius * cos(robot.theta);
-    double noseY = robot.y + config.robotRadius * sin(robot.theta);
+    double noseX = robot.pos.x + config.robotRadius * cos(robot.theta);
+    double noseY = robot.pos.y + config.robotRadius * sin(robot.theta);
 
     CommonTypes::Vec2 nosePt = CommonTypes::Vec2(noseX, noseY);
 
