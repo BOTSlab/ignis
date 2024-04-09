@@ -21,7 +21,7 @@ struct Config
     const int height = 600;
     const int coldStartSteps = 100;
     const int numberOfRobots = 20;
-    const int numberOfPucks = 60;
+    const int numberOfPucks = 40;
     const double robotRadius = 10;
     const double puckRadius = 20;
     const double maxForwardSpeed = 0.1;
@@ -54,5 +54,5 @@ struct Config
 
     // For Alife scenario.
     const double segmentSensorOffset = 0.1;
-    const double segmentSensorLength = 100;
+    const double segmentSensorLength = 100000;
 } config;

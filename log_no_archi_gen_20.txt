@@ -1,0 +1,48 @@
+Problem name: gauci_problem
+        C++ class name: gauci_problem
+
+        Global dimension:                       2
+        Integer dimension:                      0
+        Fitness dimension:                      1
+        Number of objectives:                   1
+        Equality constraints dimension:         0
+        Inequality constraints dimension:       0
+        Lower bounds: [-1, -1]
+        Upper bounds: [1, 1]
+        Has batch fitness evaluation: false
+
+        Has gradient: false
+        User implemented gradient sparsity: false
+        Has hessians: false
+        User implemented hessians sparsity: false
+
+        Fitness evaluations: 0
+
+        Thread safety: basic
+
+CMAES 4 PaGMO: 
+mu: 5 - lambda: 10 - mueff: 3.1673 - N: 2
+cc: 0.609083 - cs: 0.508227 - c1: 0.142275 - cmu: 0.154745 - sigma: 0.5 - damps: 1.50823 - chiN: 1.25427
+
+   Gen:        Fevals:          Best:            dx:            df:         sigma:
+      1              0    1.05903e+09        0.97122     2.0606e+08            0.5
+      2             10    1.07239e+09        1.29194    2.36275e+08       0.580613
+      3             20    1.06876e+09        1.94823     3.3189e+08       0.459395
+      4             30    1.03496e+09       0.323968    3.36191e+08       0.382476
+      5             40    1.07802e+09        1.75877    2.31162e+08       0.281029
+      6             50    1.00491e+09       0.538543    2.84167e+08       0.262179
+      7             60    1.03237e+09       0.658448    2.34251e+08       0.276494
+      8             70    9.95183e+08      0.0306959    2.93009e+08        0.28179
+      9             80    1.01081e+09       0.142234    1.99825e+08       0.240279
+     10             90    1.05261e+09      0.0514487    1.37551e+08       0.189019
+     11            100    1.03541e+09       0.199501    1.25509e+08       0.150177
+     12            110    9.67575e+08      0.0732861    1.71124e+08       0.118086
+     13            120    1.00322e+09       0.102305    1.46235e+08       0.113825
+     14            130    9.97953e+08      0.0544017    2.06812e+08       0.103035
+     15            140    9.83831e+08        0.12879    1.43922e+08       0.074432
+     16            150    1.01085e+09      0.0124118    7.55119e+07      0.0770964
+     17            160    1.02041e+09       0.063372    1.68291e+08      0.0646112
+     18            170    9.96719e+08      0.0406862    1.23687e+08      0.0630153
+     19            180    9.94425e+08      0.0238251    1.28941e+08      0.0597922
+     20            190    9.86704e+08     0.00801598    1.80983e+08      0.0536868
+Exit condition -- generations = 20

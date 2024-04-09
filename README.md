@@ -41,3 +41,6 @@ cmake --preset=default
 cmake -S . -B build/ -D CMAKE_BUILD_TYPE=Debug
 cmake --build build
 ```
+
+- libcmaes was not available to install with vcpkg, so I installed it on the
+system.

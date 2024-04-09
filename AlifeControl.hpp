@@ -7,6 +7,7 @@
 #include "Config.hpp"
 #include "CommonTypes.hpp"
 #include "AlifeSensing.hpp"
+#include "Parameters.hpp"
 
 using namespace CommonTypes;
 using namespace AlifeSensing;
@@ -15,6 +16,7 @@ namespace AlifeControl {
 
 ControlInput hardCodedAlife(const AlifeSensorReading &reading)
 {
+// std::cerr << reading.alpha << std::endl;
     if (reading.hit) {
         return {config.maxForwardSpeed, 0.1*config.maxAngularSpeed + 0.1*reading.alpha};
     } else {
@@ -25,9 +27,9 @@ ControlInput hardCodedAlife(const AlifeSensorReading &reading)
 ControlInput hardCodedGauci(const AlifeSensorReading &reading)
 {
     if (reading.hit) {
-        return {config.maxForwardSpeed, 0.1*config.maxAngularSpeed};
+        return {config.maxForwardSpeed, parameters.gauci[0] * config.maxAngularSpeed};
     } else {
-        return {config.maxForwardSpeed, -0.1*config.maxAngularSpeed};
+        return {config.maxForwardSpeed, parameters.gauci[1] * config.maxAngularSpeed};
     }
 }
 
@@ -40,6 +42,7 @@ void allRobotsSetControls(std::shared_ptr<WorldState> worldState, MapOfSensorRea
         const AlifeSensorReading &sensorReading = robotIndexAndSensorReading.second;
 
         robot.controlInput = hardCodedGauci(sensorReading);
+        //robot.controlInput = hardCodedAlife(sensorReading);
     }
 }
 

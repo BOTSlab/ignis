@@ -91,6 +91,11 @@ struct Vec2 {
         return std::sqrt(x * x + y * y);
     }   
 
+    double lengthSquared() const
+    {
+        return x * x + y * y;
+    }   
+
     Vec2 normalize() const
     {
         return *this / length();

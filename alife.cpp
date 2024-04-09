@@ -205,6 +205,8 @@ void handleControlsWindow(AlifeScenario &alifeScenario, ImGuiIO &io)
     // ImGui::SameLine();
 
     ImGui::Text("step count: %d", alifeScenario.getStepCount());
+    ImGui::Text("evaluation: %g", alifeScenario.currentEvaluation);
+    ImGui::Text("cum. eval.: %g", alifeScenario.cumulativeEvaluation);
     ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
     ImGui::End();
 }
@@ -264,11 +266,17 @@ int main(int, char **)
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init(glsl_version);
 
+    parameters.gauci[0] = sigmoid(0.837914);
+    parameters.gauci[1] = sigmoid(-3.43367);
+
     AlifeScenario alifeScenario;
 
     // Main loop
     while (!glfwWindowShouldClose(window))
     {
+        if (alifeScenario.getStepCount() == 1000)
+            alifeScenario.prepareToPause();
+
         alifeScenario.step();
 
         // Poll and handle events (inputs, window resize, etc.)

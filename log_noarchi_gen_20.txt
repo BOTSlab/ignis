@@ -1,0 +1,49 @@
+Problem name: gauci_problem
+	C++ class name: gauci_problem
+
+	Global dimension:			2
+	Integer dimension:			0
+	Fitness dimension:			1
+	Number of objectives:			1
+	Equality constraints dimension:		0
+	Inequality constraints dimension:	0
+	Lower bounds: [-1, -1]
+	Upper bounds: [1, 1]
+	Has batch fitness evaluation: false
+
+	Has gradient: false
+	User implemented gradient sparsity: false
+	Has hessians: false
+	User implemented hessians sparsity: false
+
+	Fitness evaluations: 0
+
+	Thread safety: basic
+
+CMAES 4 PaGMO: 
+mu: 5 - lambda: 10 - mueff: 3.1673 - N: 2
+cc: 0.609083 - cs: 0.508227 - c1: 0.142275 - cmu: 0.154745 - sigma: 0.5 - damps: 1.50823 - chiN: 1.25427
+
+   Gen:        Fevals:          Best:            dx:            df:         sigma:
+      1              0    1.10343e+09        3.26293    1.84665e+08            0.5
+      2             10    1.07251e+09        2.23938    2.17908e+08       0.491659
+      3             20    1.07231e+09        1.17805    2.10204e+08       0.421575
+      4             30    1.11383e+09        0.26066    2.66209e+08       0.463528
+      5             40    1.03535e+09        1.20357    2.31457e+08        0.40662
+      6             50    1.04291e+09       0.457914    1.72873e+08       0.384101
+      7             60    1.07093e+09        1.15307    1.70341e+08       0.307635
+      8             70    1.05844e+09       0.762113    2.04087e+08       0.269531
+      9             80    1.01946e+09       0.261479    2.55217e+08       0.304789
+     10             90    1.07809e+09       0.424595    1.59063e+08       0.333672
+     11            100    1.07136e+09       0.694111    3.06523e+08       0.365246
+     12            110    1.02125e+09       0.423129      1.399e+08       0.282745
+     13            120    1.06609e+09       0.315338    1.22931e+08       0.249212
+     14            130     1.0204e+09       0.139845    1.70339e+08       0.244909
+     15            140    1.05088e+09       0.768071    1.20771e+08       0.206189
+     16            150    9.90544e+08       0.247587    1.98381e+08        0.17065
+     17            160     1.0255e+09      0.0949455    1.63082e+08       0.144766
+     18            170    1.04186e+09      0.0613764    1.35348e+08       0.134942
+     19            180    1.03308e+09       0.106841     1.0214e+08       0.124707
+     20            190    1.02126e+09      0.0972131    1.27808e+08       0.104384
+Exit condition -- generations = 20
+Champion decision vector: -1.40986,  1.99625,  , fitness: 9.90544e+08
