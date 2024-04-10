@@ -12,19 +12,24 @@ import matplotlib.pyplot as plt
 
 def main():
 
-    filename = "mylog.txt"
+    base_name = "linear2_robots_20_pucks_50_slowedSteps_250_ssl_100"
+
+    filename = "data/{}.dat".format(base_name)
     print("Loading: {}".format(filename))
-    dataframe = pd.read_csv(filename, " ")
+    dataframe = pd.read_csv(filename, sep=',')
     print(dataframe.info())
 
     # Plot the evolution of the fitness.
     fig, axes = plt.subplots(1, 1, figsize=(10, 5))
-    dataframe.plot(ax=axes, x='time', y='fitness', label='fitness', linewidth=0.5)
-    axes.title.set_text("Fitness evolution")
-    axes.set_xlabel("Time")
+    dataframe.plot(ax=axes, x='Gen', y='gbest', label='Best Fitness', linewidth=2)
+    #dataframe.plot(ax=axes[1], x='Gen', y='Mean Vel.')
+    dataframe.plot(ax=axes, x='Gen', y='Mean lbest', label='Avg. Local Best')
+    #dataframe.plot(ax=axes[1], x='Gen', y='Avg. Dist.')
+    axes.set_xlabel('Generation')
+    axes.set_ylabel('Fitness')
 
     plt.show()
-    filename = "{}.pdf".format("evolution.pdf")
-    fig.savefig(filename, bbox_inches='tight')
+    pdfname = "data/{}.pdf".format(base_name)
+    fig.savefig(pdfname, bbox_inches='tight')
 
 main()

@@ -22,6 +22,7 @@
 
 #include "AlifeScenario.hpp"
 #include "CommonTypes.hpp"
+#include "DataLogger.hpp"
 
 const ImVec4 red = ImVec4(1.0f, 0.0f, 0.0f, 1.00f);
 const ImVec4 green = ImVec4(0.0f, 1.0f, 0.0f, 1.00f);
@@ -78,19 +79,19 @@ void plotInteraction(double scaleFactor, Config &config, std::__1::shared_ptr<Wo
 
         if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_UpArrow)))
         {
-            worldState->robots[selectedRobotIndex].controlInput.forwardSpeed = 1.5;
+            worldState->robots[selectedRobotIndex].controlInput.forwardSpeed = config.maxForwardSpeed;
         }
         if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_DownArrow)))
         {
-            worldState->robots[selectedRobotIndex].controlInput.forwardSpeed = -1.5;
+            worldState->robots[selectedRobotIndex].controlInput.forwardSpeed = -config.maxForwardSpeed;
         }
         if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_LeftArrow)))
         {
-            worldState->robots[selectedRobotIndex].controlInput.angularSpeed = 0.1;
+            worldState->robots[selectedRobotIndex].controlInput.angularSpeed = config.maxAngularSpeed;
         }
         if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_RightArrow)))
         {
-            worldState->robots[selectedRobotIndex].controlInput.angularSpeed = -0.1;
+            worldState->robots[selectedRobotIndex].controlInput.angularSpeed = -config.maxAngularSpeed;
         }
     }
 }
@@ -123,16 +124,30 @@ void perRobotPlots(size_t robotIndex, const AlifeScenario &alifeScenario, double
         oss << "Sensors for robot " << robotIndex;
         double sensorSize = 0.1 * config.robotRadius;
 
-        const AlifeSensorReading &sensorReading = alifeScenario.robotIndexToSensorReadingMap.at(robotIndex);
+        const AlifeSensorReadingVersion2 &sensorReading = alifeScenario.robotIndexToSensorReadingMap.at(robotIndex);
         Vec2 segmentStart = robot.pos + Vec2(cos(robot.theta), sin(robot.theta)) * (robot.radius + config.segmentSensorOffset);
         Vec2 segmentEnd = segmentStart + Vec2(cos(robot.theta), sin(robot.theta)) * config.segmentSensorLength;
         std::vector<double> xs = {segmentStart.x, segmentEnd.x};
         std::vector<double> ys = {segmentStart.y, segmentEnd.y};
 
-        if (sensorReading.hit) {
-            ImPlot::SetNextLineStyle(color, 2);
+        if (!sensorReading.hitPuck && !sensorReading.hitRobot) {
+            ImPlot::SetNextLineStyle(gray, 2);
+        } else if (sensorReading.hitPuck && !sensorReading.hitRobot) {
+            ImPlot::SetNextLineStyle(green, 4);
+        } else if (!sensorReading.hitPuck && sensorReading.hitRobot) {
+            ImPlot::SetNextLineStyle(red, 4);
+        } else if (sensorReading.hitPuck && sensorReading.hitRobot) {
+            ImPlot::SetNextLineStyle(blue, 4);
+        /*
+        if (sensorReading.hitValue == 0) {
+            ImPlot::SetNextLineStyle(gray, 2);
+        } else if (sensorReading.hitValue == 1) {
+            ImPlot::SetNextLineStyle(green, 4);
+        } else if (sensorReading.hitValue == 2) {
+            ImPlot::SetNextLineStyle(red, 4);
+        */
         } else {
-            ImPlot::SetNextLineStyle(gray, 1);
+            throw std::runtime_error("Unknown hit value");
         }
         ImPlot::PlotLine("SegmentSensors", xs.data(), ys.data(), 2);
     }
@@ -266,18 +281,19 @@ int main(int, char **)
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init(glsl_version);
 
-    parameters.gauci[0] = sigmoid(0.837914);
-    parameters.gauci[1] = sigmoid(-3.43367);
-
+    DataLogger dataLogger(0, "data/pso_200_cubic_2_robots_5_pucks/");
     AlifeScenario alifeScenario;
 
     // Main loop
     while (!glfwWindowShouldClose(window))
     {
-        if (alifeScenario.getStepCount() == 1000)
+        if (alifeScenario.getStepCount() == 2000)
             alifeScenario.prepareToPause();
 
         alifeScenario.step();
+
+        if (!alifeScenario.isPaused() && alifeScenario.getStepCount() % 10 == 0)
+            dataLogger.writeToFile(alifeScenario.simWorldState, alifeScenario.getStepCount(), alifeScenario.currentEvaluation, alifeScenario.cumulativeEvaluation);
 
         // Poll and handle events (inputs, window resize, etc.)
         // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.

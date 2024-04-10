@@ -127,6 +127,9 @@ struct CircleBody
     double radius, mass;
     Vec2 vel;
 
+    // This should be in Robot, but it's here for simplicity.
+    int slowedCounter = 0;
+
     CircleBody(BodyType type, double x, double y, double radius, double mass, double vx = 0.0, double vy = 0.0)
         : type(type), pos(x, y), radius(radius), mass(mass), vel(vx, vy) {}
 };

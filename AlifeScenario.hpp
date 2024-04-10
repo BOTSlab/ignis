@@ -11,14 +11,14 @@
 #pragma once
 #include "Scenario.hpp"
 #include "WorldCreation.hpp"
-#include "AlifeSensing.hpp"
+#include "AlifeSensingVersion2.hpp"
 #include "AlifeControl.hpp"
 
-using namespace AlifeSensing;
+using namespace AlifeSensingVersion2;
 
 class AlifeScenario : public Scenario {
 public:
-    MapOfSensorReadings robotIndexToSensorReadingMap;
+    MapOfSensorReadingsVersion2 robotIndexToSensorReadingMap;
 
     double currentEvaluation = 0, cumulativeEvaluation = 0;
 
@@ -29,9 +29,14 @@ public:
 
     void update()
     {
-        robotIndexToSensorReadingMap = AlifeSensing::allRobotsSense(simWorldState);
+        robotIndexToSensorReadingMap = AlifeSensingVersion2::allRobotsSense(simWorldState);
         AlifeControl::allRobotsSetControls(simWorldState, robotIndexToSensorReadingMap);
-        updateEvaluation();
+        if (config.controlMethod == AlifeControlMethod::EvolvedGauci)
+            evaluateDispersion();
+        else if (config.controlMethod == AlifeControlMethod::EvolvedCubic || config.controlMethod == AlifeControlMethod::EvolvedLinearVersion1 || config.controlMethod == AlifeControlMethod::EvolvedLinearVersion2)
+            evaluateDistanceToGoal();
+        else
+            throw std::runtime_error("Unknown control method");
     }
 
     void reset()
@@ -46,7 +51,7 @@ public:
         cumulativeEvaluation = 0;
     }
 
-    void updateEvaluation()
+    void evaluateDispersion()
     {
         // Compute the centroid of puck positions.
         Vec2 sum(0.0, 0.0);
@@ -69,6 +74,19 @@ public:
 
         // Finally, update the cumulative sum of dispersion * time, which corresponds
         // to equation (3) from Gauci et al.
+        cumulativeEvaluation += currentEvaluation * stepCount;
+    }
+
+    void evaluateDistanceToGoal()
+    {
+        // Compute the sum of squared distances of all pucks to the goal.
+        double ssd = 0;
+        for (const auto& puck : simWorldState->pucks)
+            ssd += (puck.pos - Vec2(config.puckGoalX, config.puckGoalY)).lengthSquared();            
+
+        currentEvaluation = ssd;
+
+        // Finally, update the cumulative sum of distance * time.
         cumulativeEvaluation += currentEvaluation * stepCount;
     }
 };

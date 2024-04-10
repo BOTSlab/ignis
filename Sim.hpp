@@ -48,8 +48,11 @@ void dynamicCollisionHandling(std::vector<CircleBody*> allBodies, int &nRobotRob
                 b2->vel.x -= impulseX / b2->mass;
                 b2->vel.y -= impulseY / b2->mass;
 
-                if (b1->type == BodyType::Robot && b2->type == BodyType::Robot)
+                if (b1->type == BodyType::Robot && b2->type == BodyType::Robot) {
                     nRobotRobotCollisions++;
+                    b1->slowedCounter = config.slowedSteps;
+                    b2->slowedCounter = config.slowedSteps;
+                }
 
                 if ((b1->type == BodyType::Robot && b2->type == BodyType::Puck) |
                     (b1->type == BodyType::Puck && b2->type == BodyType::Robot))
@@ -83,8 +86,11 @@ void staticCollisionHandling(std::vector<CircleBody*> allBodies, int &nRobotRobo
                 b2->pos.x -= penetrationDepth * nx * 0.5;
                 b2->pos.y -= penetrationDepth * ny * 0.5;
 
-                if (b1->type == BodyType::Robot && b2->type == BodyType::Robot)
+                if (b1->type == BodyType::Robot && b2->type == BodyType::Robot) {
                     nRobotRobotCollisions++;
+                    b1->slowedCounter = config.slowedSteps;
+                    b2->slowedCounter = config.slowedSteps;
+                }
 
                 if ((b1->type == BodyType::Robot && b2->type == BodyType::Puck) |
                     (b1->type == BodyType::Puck && b2->type == BodyType::Robot))
@@ -135,10 +141,26 @@ void update(std::shared_ptr<WorldState> worldState)
     boundaryCollisionHandling(allBodies, worldState->nRobotBoundaryCollisions);
 
     for (auto& robot : worldState->robots) {
-        // Incorporate the control input into the robot's state.
-        robot.vel.x += robot.controlInput.forwardSpeed * cos(robot.theta);
-        robot.vel.y += robot.controlInput.forwardSpeed * sin(robot.theta);
-        robot.theta += robot.controlInput.angularSpeed;
+        // Incorporate the control input into the robot's state, but only if the robot is not currently slowed.
+        if (robot.slowedCounter == 0) {
+            // First make sure the control input is within the allowed range.
+            double forward = robot.controlInput.forwardSpeed;
+            double angular = robot.controlInput.angularSpeed;
+            if (forward > config.maxForwardSpeed)
+                forward = config.maxForwardSpeed;
+            if (forward < -config.maxForwardSpeed)
+                forward = -config.maxForwardSpeed;
+            if (angular > config.maxAngularSpeed)
+                angular = config.maxAngularSpeed;
+            if (angular < -config.maxAngularSpeed)
+                angular = -config.maxAngularSpeed;
+
+            robot.vel.x += forward * cos(robot.theta);
+            robot.vel.y += forward * sin(robot.theta);
+            robot.theta += angular;
+        } else {
+            robot.slowedCounter--;
+        }
 
         robot.pos.x += robot.vel.x;
         robot.pos.y += robot.vel.y;

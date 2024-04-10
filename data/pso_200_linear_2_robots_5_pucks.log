@@ -1,14 +1,14 @@
-Problem name: gauci_problem
-	C++ class name: gauci_problem
+Problem name: linear_problem
+	C++ class name: linear_problem
 
-	Global dimension:			2
+	Global dimension:			9
 	Integer dimension:			0
 	Fitness dimension:			1
 	Number of objectives:			1
 	Equality constraints dimension:		0
 	Inequality constraints dimension:	0
-	Lower bounds: [-1, -1]
-	Upper bounds: [1, 1]
+	Lower bounds: [-1, -1, -1, -1, -1, ... ]
+	Upper bounds: [1, 1, 1, 1, 1, ... ]
 	Has batch fitness evaluation: false
 
 	Has gradient: false
@@ -20,3 +20,4 @@ Problem name: gauci_problem
 
 	Thread safety: basic
 
+Champion decision vector: -0.21638, 0.931231, 0.390794, -0.663776, -0.91249, -0.327127, 0.486056, 0.371077, -0.477082,   fitness: 6.81657e+11

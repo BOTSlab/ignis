@@ -1,0 +1,23 @@
+Problem name: linear_problem
+	C++ class name: linear_problem
+
+	Global dimension:			9
+	Integer dimension:			0
+	Fitness dimension:			1
+	Number of objectives:			1
+	Equality constraints dimension:		0
+	Inequality constraints dimension:	0
+	Lower bounds: [-1, -1, -1, -1, -1, ... ]
+	Upper bounds: [1, 1, 1, 1, 1, ... ]
+	Has batch fitness evaluation: false
+
+	Has gradient: false
+	User implemented gradient sparsity: false
+	Has hessians: false
+	User implemented hessians sparsity: false
+
+	Fitness evaluations: 0
+
+	Thread safety: basic
+
+Champion decision vector: 0.890562, 0.0978941, -0.756533, 0.204319, 0.115227, 0.80507, 0.841659, 0.211442, -0.276148,   fitness: 9.67054e+12
