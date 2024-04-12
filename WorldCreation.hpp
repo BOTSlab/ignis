@@ -16,6 +16,8 @@ std::shared_ptr<WorldState> randomWorld() {
     std::uniform_real_distribution<double> robotXDist(config.robotRadius, config.width - config.robotRadius);
     std::uniform_real_distribution<double> robotYDist(config.robotRadius, config.height - config.robotRadius);
     std::uniform_real_distribution<double> robotThetaDist(-M_PI, M_PI);
+    std::uniform_real_distribution<double> goalXDist(0, config.width);
+    std::uniform_real_distribution<double> goalYDist(0, config.height);
 
     // Create an instance of WorldState using make_shared
     auto world = std::make_shared<WorldState>();
@@ -26,6 +28,9 @@ std::shared_ptr<WorldState> randomWorld() {
     for (int i = 0; i < config.numberOfRobots; i++)
         world->robots.push_back(Robot(robotXDist(gen), robotYDist(gen), config.robotRadius, 100.0,  robotThetaDist(gen)));
 
+    // Generate a random goal position
+    world->goalPos = Vec2(goalXDist(gen), goalYDist(gen));
+
     return world;
 }
 
@@ -35,6 +40,8 @@ std::shared_ptr<WorldState> lineOfRobots() {
     // Create a line of robots
     for (int i = 0; i < config.numberOfRobots; i++)
         world->robots.push_back(Robot(100 + i * 200, 300, config.robotRadius, 100.0, 0));
+
+    world->goalPos = Vec2(config.width/2, config.height/2);
 
     return world;
 }

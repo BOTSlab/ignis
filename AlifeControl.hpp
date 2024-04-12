@@ -6,26 +6,52 @@
 #include "WorldState.hpp"
 #include "Config.hpp"
 #include "CommonTypes.hpp"
-//#include "AlifeSensingVersion1.hpp"
-#include "AlifeSensingVersion2.hpp"
+#include "AlifeSensing.hpp"
 #include "Parameters.hpp"
 
 using namespace CommonTypes;
-//using namespace AlifeSensingVersion1;
-using namespace AlifeSensingVersion2;
+using namespace AlifeSensing;
 
 namespace AlifeControl {
 
-/*
-ControlInput evolvedGauci(const AlifeSensorReading &reading)
+ControlInput evolvedGauci3(const AlifeSensorReading &reading)
 {
-    if (reading.hit) {
-        return {config.maxForwardSpeed, parameters.gauci[0] * config.maxAngularSpeed};
-    } else {
-        return {config.maxForwardSpeed, parameters.gauci[1] * config.maxAngularSpeed};
-    }
+    double angular = 0;
+    if (reading.hitValue == 0)
+        angular = parameters.vec[0];
+
+    else if (reading.hitValue == 1)
+        angular = parameters.vec[1];
+
+    else if (reading.hitValue == 2)
+        angular = parameters.vec[2];
+
+    else
+        throw std::runtime_error("Unknown hit value");
+
+    return {config.maxForwardSpeed, angular * config.maxAngularSpeed};        
 }
 
+ControlInput evolvedBaby6(const AlifeSensorReading &reading)
+{
+    double angular = 0;
+    if (reading.hitValue == 0)
+        angular = parameters.vec[0] + parameters.vec[1] * reading.alpha;
+
+    else if (reading.hitValue == 1)
+        angular = parameters.vec[2] + parameters.vec[3] * reading.alpha;
+
+    else if (reading.hitValue == 2)
+        angular = parameters.vec[4] + parameters.vec[5] * reading.alpha;
+
+    else
+        throw std::runtime_error("Unknown hit value");
+
+    return {config.maxForwardSpeed, angular * config.maxAngularSpeed};        
+}
+
+
+/*
 ControlInput evolvedCubic(const AlifeSensorReading &reading)
 {
     double a = reading.alpha;
@@ -45,58 +71,76 @@ ControlInput evolvedCubic(const AlifeSensorReading &reading)
 }
 */
 
-/*
-ControlInput evolvedLinearVersion1(const AlifeSensorReadingVersion1 &reading)
+ControlInput evolvedLinear(const AlifeSensorReading &reading)
 {
     double a = reading.alpha;
     double angular = 0;
     if (reading.hitValue == 0)
-        angular = parameters.linearVersion1[0] * config.maxAngularSpeed + 
-                  parameters.linearVersion1[1] * a +
-                  parameters.linearVersion1[2];
+        angular = parameters.vec[0] * config.maxAngularSpeed + 
+                  parameters.vec[1] * a +
+                  parameters.vec[2];
 
     else if (reading.hitValue == 1)
-        angular = parameters.linearVersion1[3] * config.maxAngularSpeed + 
-                  parameters.linearVersion1[4] * a +
-                  parameters.linearVersion1[5];
+        angular = parameters.vec[3] * config.maxAngularSpeed + 
+                  parameters.vec[4] * a +
+                  parameters.vec[5];
     else if (reading.hitValue == 2)
-        angular = parameters.linearVersion1[6] * config.maxAngularSpeed + 
-                  parameters.linearVersion1[7] * a +
-                  parameters.linearVersion1[8];
+        angular = parameters.vec[6] * config.maxAngularSpeed + 
+                  parameters.vec[7] * a +
+                  parameters.vec[8];
     else
         throw std::runtime_error("Unknown hit value");
 
     return {config.maxForwardSpeed, angular};        
+}
+
+/* spinner3 
+ControlInput evolvedSpinner(const AlifeSensorReading &reading)
+{
+    double alpha = reading.alpha;
+
+    // We will assume that all parameters below are in the range [-1, 1].
+    double deviation = 0;
+    if (reading.hitValue == 0)
+        deviation = parameters.spinner[0] * alpha / M_PI;
+
+    else if (reading.hitValue == 1)
+        deviation = parameters.spinner[1] * alpha / M_PI;
+        
+    else if (reading.hitValue == 2)
+        deviation = parameters.spinner[2] * alpha / M_PI;
+        
+    else
+        throw std::runtime_error("Unknown hit value");
+
+    double angular = config.nominalSpin + Utils::scale(deviation, -1, 1, -config.maxDeviation, config.maxDeviation);
+
+    return {config.maxForwardSpeed, angular * config.maxAngularSpeed};        
 }
 */
 
-ControlInput evolvedLinearVersion2(const AlifeSensorReadingVersion2 &reading)
+ControlInput evolvedSpinner6(const AlifeSensorReading &reading)
 {
-    double a = reading.alpha;
+    double alpha = reading.alpha;
+
+    // We will assume that all parameters below are in the range [-1, 1].
     double angular = 0;
-    if (!reading.hitPuck && !reading.hitRobot)
-        angular = parameters.linearVersion2[0] * config.maxAngularSpeed + 
-                  parameters.linearVersion2[1] * a +
-                  parameters.linearVersion2[2];
-    else if (reading.hitPuck && !reading.hitRobot)
-        angular = parameters.linearVersion2[3] * config.maxAngularSpeed + 
-                  parameters.linearVersion2[4] * a +
-                  parameters.linearVersion2[5];
-    else if (!reading.hitPuck && reading.hitRobot)
-        angular = parameters.linearVersion2[6] * config.maxAngularSpeed + 
-                  parameters.linearVersion2[7] * a +
-                  parameters.linearVersion2[8];
-    else if (reading.hitPuck && reading.hitRobot)
-        angular = parameters.linearVersion2[9] * config.maxAngularSpeed + 
-                  parameters.linearVersion2[10] * a +
-                  parameters.linearVersion2[11];
+    if (reading.hitValue == 0)
+        angular = parameters.vec[0] * std::cos(alpha - parameters.vec[1] * M_PI);
+
+    else if (reading.hitValue == 1)
+        angular = parameters.vec[2] * std::cos(alpha - parameters.vec[3] * M_PI);
+        
+    else if (reading.hitValue == 2)
+        angular = parameters.vec[4] * std::cos(alpha - parameters.vec[5] * M_PI);
+        
     else
         throw std::runtime_error("Unknown hit value");
 
-    return {config.maxForwardSpeed, angular};        
+    return {config.maxForwardSpeed, angular * config.maxAngularSpeed};        
 }
 
-void allRobotsSetControls(std::shared_ptr<WorldState> worldState, MapOfSensorReadingsVersion2 &robotIndexToSensorReadings)
+void allRobotsSetControls(std::shared_ptr<WorldState> worldState, MapOfSensorReadings &robotIndexToSensorReadings)
 {
     for (const auto &robotIndexAndSensorReading : robotIndexToSensorReadings)
     {
@@ -104,14 +148,14 @@ void allRobotsSetControls(std::shared_ptr<WorldState> worldState, MapOfSensorRea
         Robot &robot = worldState->robots[robotIndex];
         const auto &sensorReading = robotIndexAndSensorReading.second;
 
-/*        if (config.controlMethod == AlifeControlMethod::EvolvedGauci)
-            robot.controlInput = evolvedGauci(sensorReading);
-        else if (config.controlMethod == AlifeControlMethod::EvolvedCubic)
-            robot.controlInput = evolvedCubic(sensorReading);
-        else */if (config.controlMethod == AlifeControlMethod::EvolvedLinearVersion2)
-            robot.controlInput = evolvedLinearVersion2(sensorReading);
+        if (config.controlMethod == AlifeControlMethod::EvolvedGauci)
+            robot.controlInput = evolvedGauci3(sensorReading);
+        else if (config.controlMethod == AlifeControlMethod::EvolvedLinear)
+            robot.controlInput = evolvedBaby6(sensorReading);
+        else if (config.controlMethod == AlifeControlMethod::EvolvedSpinner)
+            robot.controlInput = evolvedSpinner6(sensorReading);
         else
-            throw std::runtime_error("Unknown control method");
+            throw std::runtime_error("Unknown control method!");
     }
 }
 

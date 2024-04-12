@@ -11,14 +11,14 @@
 #pragma once
 #include "Scenario.hpp"
 #include "WorldCreation.hpp"
-#include "AlifeSensingVersion2.hpp"
+#include "AlifeSensing.hpp"
 #include "AlifeControl.hpp"
 
-using namespace AlifeSensingVersion2;
+using namespace AlifeSensing;
 
 class AlifeScenario : public Scenario {
 public:
-    MapOfSensorReadingsVersion2 robotIndexToSensorReadingMap;
+    MapOfSensorReadings robotIndexToSensorReadingMap;
 
     double currentEvaluation = 0, cumulativeEvaluation = 0;
 
@@ -29,14 +29,12 @@ public:
 
     void update()
     {
-        robotIndexToSensorReadingMap = AlifeSensingVersion2::allRobotsSense(simWorldState);
+        robotIndexToSensorReadingMap = AlifeSensing::allRobotsSense(simWorldState);
         AlifeControl::allRobotsSetControls(simWorldState, robotIndexToSensorReadingMap);
         if (config.controlMethod == AlifeControlMethod::EvolvedGauci)
             evaluateDispersion();
-        else if (config.controlMethod == AlifeControlMethod::EvolvedCubic || config.controlMethod == AlifeControlMethod::EvolvedLinearVersion1 || config.controlMethod == AlifeControlMethod::EvolvedLinearVersion2)
-            evaluateDistanceToGoal();
         else
-            throw std::runtime_error("Unknown control method");
+            evaluateDistanceToGoal();
     }
 
     void reset()
@@ -82,9 +80,12 @@ public:
         // Compute the sum of squared distances of all pucks to the goal.
         double ssd = 0;
         for (const auto& puck : simWorldState->pucks)
-            ssd += (puck.pos - Vec2(config.puckGoalX, config.puckGoalY)).lengthSquared();            
+            ssd += (puck.pos - simWorldState->goalPos).lengthSquared();            
 
-        currentEvaluation = ssd;
+        //if (simWorldState->nRobotRobotCollisions == 0 && simWorldState->nRobotBoundaryCollisions == 0)
+            currentEvaluation = ssd;
+        //else
+        //    currentEvaluation = ssd + 1;
 
         // Finally, update the cumulative sum of distance * time.
         cumulativeEvaluation += currentEvaluation * stepCount;

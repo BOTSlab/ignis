@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 
 def main():
 
-    base_name = "linear2_robots_20_pucks_50_slowedSteps_250_ssl_100"
+    base_name = "spinner6_r10_p25_collisionProduct"
 
     filename = "data/{}.dat".format(base_name)
     print("Loading: {}".format(filename))

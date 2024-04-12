@@ -1,0 +1,23 @@
+Problem name: spinner_problem
+	C++ class name: spinner_problem
+
+	Global dimension:			8
+	Integer dimension:			0
+	Fitness dimension:			1
+	Number of objectives:			1
+	Equality constraints dimension:		0
+	Inequality constraints dimension:	0
+	Lower bounds: [-1, -1, -1, -1, -1, ... ]
+	Upper bounds: [1, 1, 1, 1, 1, ... ]
+	Has batch fitness evaluation: false
+
+	Has gradient: false
+	User implemented gradient sparsity: false
+	Has hessians: false
+	User implemented hessians sparsity: false
+
+	Fitness evaluations: 0
+
+	Thread safety: basic
+
+Champion decision vector: -0.316218, 0.472915, 0.73053, -0.0671648, 0.0647221, 0.484339, -0.93812, 0.804102,   fitness: 4.66594e+13

@@ -5,6 +5,20 @@ using CommonTypes::Vec2;
 namespace Utils {
 
 /**
+ * Scales a value from one range to another range.
+ *
+ * @param valueIn The value to be scaled.
+ * @param inputMin The minimum value of the input range.
+ * @param inputMax The maximum value of the input range.
+ * @param outputMin The minimum value of the output range.
+ * @param outputMax The maximum value of the output range.
+ * @return The scaled value.
+ */
+double scale(double valueIn, double inputMin, double inputMax, double outputMin, double outputMax) {
+    return ((outputMax - outputMin) * (valueIn - inputMin) / (inputMax - inputMin)) + outputMin;
+}
+
+/**
  * Checks if a line segment intersects with a circle.
  *
  * @param segmentStart The starting point of the line segment.

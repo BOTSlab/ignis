@@ -124,28 +124,18 @@ void perRobotPlots(size_t robotIndex, const AlifeScenario &alifeScenario, double
         oss << "Sensors for robot " << robotIndex;
         double sensorSize = 0.1 * config.robotRadius;
 
-        const AlifeSensorReadingVersion2 &sensorReading = alifeScenario.robotIndexToSensorReadingMap.at(robotIndex);
+        const AlifeSensorReading &sensorReading = alifeScenario.robotIndexToSensorReadingMap.at(robotIndex);
         Vec2 segmentStart = robot.pos + Vec2(cos(robot.theta), sin(robot.theta)) * (robot.radius + config.segmentSensorOffset);
         Vec2 segmentEnd = segmentStart + Vec2(cos(robot.theta), sin(robot.theta)) * config.segmentSensorLength;
         std::vector<double> xs = {segmentStart.x, segmentEnd.x};
         std::vector<double> ys = {segmentStart.y, segmentEnd.y};
 
-        if (!sensorReading.hitPuck && !sensorReading.hitRobot) {
-            ImPlot::SetNextLineStyle(gray, 2);
-        } else if (sensorReading.hitPuck && !sensorReading.hitRobot) {
-            ImPlot::SetNextLineStyle(green, 4);
-        } else if (!sensorReading.hitPuck && sensorReading.hitRobot) {
-            ImPlot::SetNextLineStyle(red, 4);
-        } else if (sensorReading.hitPuck && sensorReading.hitRobot) {
-            ImPlot::SetNextLineStyle(blue, 4);
-        /*
         if (sensorReading.hitValue == 0) {
             ImPlot::SetNextLineStyle(gray, 2);
         } else if (sensorReading.hitValue == 1) {
             ImPlot::SetNextLineStyle(green, 4);
         } else if (sensorReading.hitValue == 2) {
             ImPlot::SetNextLineStyle(red, 4);
-        */
         } else {
             throw std::runtime_error("Unknown hit value");
         }
@@ -165,7 +155,7 @@ void plotWorldState(const char *title, const AlifeScenario &alifeScenario)
 
     ImGui::Begin(title);
     double buffer = 100;
-    double plotScale = 1.55;
+    double plotScale = 1.35;
     ImPlot::SetNextAxesLimits(-buffer, config.width + buffer, -buffer, config.height + buffer);
     if (ImPlot::BeginPlot(title, ImVec2(plotScale*config.width, plotScale*config.height), ImPlotFlags_::ImPlotFlags_Equal | ImPlotFlags_::ImPlotFlags_NoTitle))
     {
@@ -222,6 +212,8 @@ void handleControlsWindow(AlifeScenario &alifeScenario, ImGuiIO &io)
     ImGui::Text("step count: %d", alifeScenario.getStepCount());
     ImGui::Text("evaluation: %g", alifeScenario.currentEvaluation);
     ImGui::Text("cum. eval.: %g", alifeScenario.cumulativeEvaluation);
+    ImGui::Text("r-r collsions: %d", alifeScenario.simWorldState->nRobotRobotCollisions);
+    ImGui::Text("r-b collsions: %d", alifeScenario.simWorldState->nRobotBoundaryCollisions);
     ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
     ImGui::End();
 }
@@ -281,7 +273,7 @@ int main(int, char **)
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init(glsl_version);
 
-    DataLogger dataLogger(0, "data/pso_200_cubic_2_robots_5_pucks/");
+    DataLogger dataLogger(0, "data/dataLogger/");
     AlifeScenario alifeScenario;
 
     // Main loop

@@ -5,8 +5,8 @@ enum class AlifeControlMethod
 {
     EvolvedGauci,
     EvolvedCubic,
-    EvolvedLinearVersion1,
-    EvolvedLinearVersion2
+    EvolvedLinear,
+    EvolvedSpinner
 };
 
 enum class OverallMethod
@@ -22,24 +22,24 @@ enum class CurveBlendMethod
 
 struct Config
 {
-    const AlifeControlMethod controlMethod = AlifeControlMethod::EvolvedLinearVersion2;
+    const AlifeControlMethod controlMethod = AlifeControlMethod::EvolvedSpinner;
 
     const OverallMethod overallMethod = OverallMethod::DilatedPolygonCurves;
     const CurveBlendMethod curveBlendMethod = CurveBlendMethod::Bulge;
 
-    const int width = 1000;
+    const int width = 1200;
     const int height = 600;
     const int coldStartSteps = 0;
-    const int numberOfRobots = 20;
-    const int numberOfPucks = 50;
+    const int numberOfRobots = 10;
+    const int numberOfPucks = 25;
     const double robotRadius = 10;
     const double puckRadius = 20;
     const double maxForwardSpeed = 0.25;
     const double maxAngularSpeed = 0.1;
 
     // For curve judgment.
-    const double puckGoalX = 300;
-    const double puckGoalY = 300;
+    //const double puckGoalX = 0;
+    //const double puckGoalY = 600;
     const int maxStallSteps = 1000;
 
     // For dilation of Voronoi cells.
@@ -64,6 +64,7 @@ struct Config
 
     // For Alife scenario.
     const double segmentSensorOffset = 0.1;
-    const double segmentSensorLength = 100;
-    const double slowedSteps = 250;
+    const double segmentSensorLength = 1000000;
+    const double slowedSteps = 0;
+    const double minAngular = 0;
 } config;

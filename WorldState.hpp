@@ -13,6 +13,8 @@ struct WorldState
     int nRobotPuckCollisions = 0;
     int nRobotBoundaryCollisions = 0;
 
+    Vec2 goalPos;
+
     void resetCollisionCounts()
     {
         nRobotRobotCollisions = 0;
