@@ -4,9 +4,10 @@
 enum class AlifeControlMethod
 {
     EvolvedGauci,
-    EvolvedCubic,
-    EvolvedLinear,
-    EvolvedSpinner
+    //EvolvedCubic,
+    //EvolvedLinear,
+    //EvolvedSpinner,
+    EvolvedActiveVision
 };
 
 enum class OverallMethod
@@ -22,7 +23,7 @@ enum class CurveBlendMethod
 
 struct Config
 {
-    const AlifeControlMethod controlMethod = AlifeControlMethod::EvolvedSpinner;
+    const AlifeControlMethod controlMethod = AlifeControlMethod::EvolvedActiveVision;
 
     const OverallMethod overallMethod = OverallMethod::DilatedPolygonCurves;
     const CurveBlendMethod curveBlendMethod = CurveBlendMethod::Bulge;
@@ -30,8 +31,8 @@ struct Config
     const int width = 1200;
     const int height = 600;
     const int coldStartSteps = 0;
-    const int numberOfRobots = 10;
-    const int numberOfPucks = 25;
+    const int numberOfRobots = 40;
+    const int numberOfPucks = 100;
     const double robotRadius = 10;
     const double puckRadius = 20;
     const double maxForwardSpeed = 0.25;

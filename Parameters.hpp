@@ -19,6 +19,5 @@ struct Parameters
     double gauci3[3] = {0, 0, 0};
     */
 
-    const int n = 6;
-    std::vector<double> vec = {0.970985, 0.71465, 0.257892, -0.77664, -1, 0.194241};
+    std::vector<double> vec = {-0.914085, 0.800751, -0.39134, -0.623223, 0.991232};
 } parameters;

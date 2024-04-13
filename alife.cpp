@@ -125,10 +125,8 @@ void perRobotPlots(size_t robotIndex, const AlifeScenario &alifeScenario, double
         double sensorSize = 0.1 * config.robotRadius;
 
         const AlifeSensorReading &sensorReading = alifeScenario.robotIndexToSensorReadingMap.at(robotIndex);
-        Vec2 segmentStart = robot.pos + Vec2(cos(robot.theta), sin(robot.theta)) * (robot.radius + config.segmentSensorOffset);
-        Vec2 segmentEnd = segmentStart + Vec2(cos(robot.theta), sin(robot.theta)) * config.segmentSensorLength;
-        std::vector<double> xs = {segmentStart.x, segmentEnd.x};
-        std::vector<double> ys = {segmentStart.y, segmentEnd.y};
+        std::vector<double> xs = {sensorReading.segmentStart.x, sensorReading.segmentEnd.x};
+        std::vector<double> ys = {sensorReading.segmentStart.y, sensorReading.segmentEnd.y};
 
         if (sensorReading.hitValue == 0) {
             ImPlot::SetNextLineStyle(gray, 2);
@@ -168,6 +166,10 @@ void plotWorldState(const char *title, const AlifeScenario &alifeScenario)
         ImVec2 plotSizeInPixels = ImPlot::GetPlotSize();
         ImPlotRect plotRect = ImPlot::GetPlotLimits();
         double scaleFactor = plotSizeInPixels.x / (plotRect.X.Max - plotRect.X.Min);
+
+        // Draw the goal position.
+        ImPlot::SetNextMarkerStyle(ImPlotMarker_Cross, scaleFactor * 40, green, IMPLOT_AUTO, green);
+        ImPlot::PlotScatter("Goal", &worldState->goalPos.x, &worldState->goalPos.y, 1);
 
         std::vector<double> puckXs, puckYs;
         for (int i = 0; i < worldState->pucks.size(); ++i)
@@ -272,6 +274,18 @@ int main(int, char **)
     // Setup Platform/Renderer backends
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init(glsl_version);
+
+    // Read in the parameters in last_parameters.dat into parameters.vec
+    std::ifstream lastParametersFile("last_parameters.dat");
+    if (lastParametersFile.is_open()) {
+        parameters.vec.clear();
+        double value;
+        while (lastParametersFile >> value)
+            parameters.vec.push_back(value);
+        cout << "Read in the following parameters: ";
+        for (int i = 0; i < parameters.vec.size(); ++i)
+            cout << parameters.vec[i] << " ";
+    }
 
     DataLogger dataLogger(0, "data/dataLogger/");
     AlifeScenario alifeScenario;

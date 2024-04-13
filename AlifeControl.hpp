@@ -32,25 +32,6 @@ ControlInput evolvedGauci3(const AlifeSensorReading &reading)
     return {config.maxForwardSpeed, angular * config.maxAngularSpeed};        
 }
 
-ControlInput evolvedBaby6(const AlifeSensorReading &reading)
-{
-    double angular = 0;
-    if (reading.hitValue == 0)
-        angular = parameters.vec[0] + parameters.vec[1] * reading.alpha;
-
-    else if (reading.hitValue == 1)
-        angular = parameters.vec[2] + parameters.vec[3] * reading.alpha;
-
-    else if (reading.hitValue == 2)
-        angular = parameters.vec[4] + parameters.vec[5] * reading.alpha;
-
-    else
-        throw std::runtime_error("Unknown hit value");
-
-    return {config.maxForwardSpeed, angular * config.maxAngularSpeed};        
-}
-
-
 /*
 ControlInput evolvedCubic(const AlifeSensorReading &reading)
 {
@@ -71,6 +52,7 @@ ControlInput evolvedCubic(const AlifeSensorReading &reading)
 }
 */
 
+/*
 ControlInput evolvedLinear(const AlifeSensorReading &reading)
 {
     double a = reading.alpha;
@@ -93,6 +75,7 @@ ControlInput evolvedLinear(const AlifeSensorReading &reading)
 
     return {config.maxForwardSpeed, angular};        
 }
+*/
 
 /* spinner3 
 ControlInput evolvedSpinner(const AlifeSensorReading &reading)
@@ -119,6 +102,7 @@ ControlInput evolvedSpinner(const AlifeSensorReading &reading)
 }
 */
 
+/*
 ControlInput evolvedSpinner6(const AlifeSensorReading &reading)
 {
     double alpha = reading.alpha;
@@ -139,6 +123,7 @@ ControlInput evolvedSpinner6(const AlifeSensorReading &reading)
 
     return {config.maxForwardSpeed, angular * config.maxAngularSpeed};        
 }
+*/
 
 void allRobotsSetControls(std::shared_ptr<WorldState> worldState, MapOfSensorReadings &robotIndexToSensorReadings)
 {
@@ -148,12 +133,8 @@ void allRobotsSetControls(std::shared_ptr<WorldState> worldState, MapOfSensorRea
         Robot &robot = worldState->robots[robotIndex];
         const auto &sensorReading = robotIndexAndSensorReading.second;
 
-        if (config.controlMethod == AlifeControlMethod::EvolvedGauci)
+        if (config.controlMethod == AlifeControlMethod::EvolvedGauci || config.controlMethod == AlifeControlMethod::EvolvedActiveVision)
             robot.controlInput = evolvedGauci3(sensorReading);
-        else if (config.controlMethod == AlifeControlMethod::EvolvedLinear)
-            robot.controlInput = evolvedBaby6(sensorReading);
-        else if (config.controlMethod == AlifeControlMethod::EvolvedSpinner)
-            robot.controlInput = evolvedSpinner6(sensorReading);
         else
             throw std::runtime_error("Unknown control method!");
     }

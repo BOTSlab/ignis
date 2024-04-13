@@ -8,14 +8,16 @@
 #include "Config.hpp"
 #include "CommonTypes.hpp"
 #include "Utils.hpp"
+#include "Parameters.hpp"
+
 
 using namespace CommonTypes;
 
 namespace AlifeSensing {
 
 struct AlifeSensorReading {
+    Vec2 segmentStart, segmentEnd;
     int hitValue; // 0: no hit, 1: hit puck, 2: hit robot
-    double alpha;
 };
 
 // A map from robot index to it's sensor reading.
@@ -42,8 +44,18 @@ MapOfSensorReadings allRobotsSense(std::shared_ptr<WorldState> worldState)
             continue;
         }
 
-        Vec2 segmentStart = robot.pos + Vec2(cos(robot.theta), sin(robot.theta)) * (robot.radius + config.segmentSensorOffset);
-        Vec2 segmentEnd = segmentStart + Vec2(cos(robot.theta), sin(robot.theta)) * config.segmentSensorLength;
+        // Determine alpha, the angle between the robot's heading and the local
+        // goal direction.
+        double angleToGoal = atan2(worldState->goalPos.y - robot.pos.y, worldState->goalPos.x - robot.pos.x);
+        double alpha = Angles::getSmallestSignedAngularDifference(angleToGoal, robot.theta);
+
+        double sensorAngle = robot.theta;
+        if (config.controlMethod == AlifeControlMethod::EvolvedActiveVision) {
+            sensorAngle += parameters.vec[3] * std::cos(alpha - parameters.vec[4] * M_PI);
+        }
+
+        Vec2 segmentStart = robot.pos + Vec2(cos(sensorAngle), sin(sensorAngle)) * (robot.radius + config.segmentSensorOffset);
+        Vec2 segmentEnd = segmentStart + Vec2(cos(sensorAngle), sin(sensorAngle)) * config.segmentSensorLength;
 
         // Find the closest puck that the segment intersects.
         bool hitPuck = false;
@@ -73,18 +85,13 @@ MapOfSensorReadings allRobotsSense(std::shared_ptr<WorldState> worldState)
             }
         }
 
-        // Determine alpha, the angle between the robot's heading and the local
-        // goal direction.
-        double angleToGoal = atan2(worldState->goalPos.y - robot.pos.y, worldState->goalPos.x - robot.pos.x);
-        double alpha = Angles::getSmallestSignedAngularDifference(angleToGoal, robot.theta);
-
         int hitValue = 0;
         if (hitPuck && (!hitRobot || closestStartToPuckDistance < closestStartToRobotDistance))
             hitValue = 1;
         else if (hitRobot && (!hitPuck || closestStartToRobotDistance < closestStartToPuckDistance))
             hitValue = 2;
 
-        robotIndexToSensorReadings[robotIndex] = {hitValue, alpha};
+        robotIndexToSensorReadings[robotIndex] = {segmentStart, segmentEnd, hitValue};
     }
 
     return robotIndexToSensorReadings;
