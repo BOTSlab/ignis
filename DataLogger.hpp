@@ -16,7 +16,7 @@ using namespace std;
 
 class DataLogger {
     int m_trialIndex;
-    ofstream m_statsStream, m_robotPoseStream, m_puckPositionStream;
+    ofstream m_statsStream, m_robotPoseStream, m_robotSensorAngleStream, m_puckPositionStream;
 
 public:
     DataLogger(int trialIndex, std::string dataFilenameBase)
@@ -25,13 +25,15 @@ public:
         if (mkdir(dataFilenameBase.c_str(), 0777) == -1 && errno != EEXIST)
             cerr << "Error creating directory: " << dataFilenameBase << endl;
 
-        stringstream statsFilename, robotPoseFilename, puckPositionFilename;
+        stringstream statsFilename, robotPoseFilename, robotSensorAngleFilename, puckPositionFilename;
         statsFilename << dataFilenameBase << "/stats_" << trialIndex << ".dat";
         robotPoseFilename << dataFilenameBase << "/robotPose_" << trialIndex << ".dat";
+        robotSensorAngleFilename << dataFilenameBase << "/robotSensorAngle_" << trialIndex << ".dat";
         puckPositionFilename << dataFilenameBase << "/puckPosition_" << trialIndex << ".dat";
 
         m_statsStream = ofstream(statsFilename.str());
         m_robotPoseStream = ofstream(robotPoseFilename.str());
+        m_robotSensorAngleStream = ofstream(robotSensorAngleFilename.str());
         m_puckPositionStream = ofstream(puckPositionFilename.str());
     }
 
@@ -46,6 +48,13 @@ public:
         }
         m_robotPoseStream << "\n";
         m_robotPoseStream.flush();
+
+        m_robotSensorAngleStream << stepCount;
+        for (auto& robot : worldState->robots) {
+            m_robotSensorAngleStream << " " << ((int)(1000 * robot.sensorAngle)) / 1000.0; // Rounding angle to 3 decimals
+        }
+        m_robotSensorAngleStream << "\n";
+        m_robotSensorAngleStream.flush();
 
         m_puckPositionStream << stepCount;
         for (auto& puck : worldState->pucks) {

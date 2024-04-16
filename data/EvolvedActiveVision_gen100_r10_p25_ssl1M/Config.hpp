@@ -19,7 +19,6 @@ enum class AlifeControlMethod
 //     Bulge
 // };
 
-
 struct Config
 {
     const AlifeControlMethod controlMethod = AlifeControlMethod::EvolvedActiveVision;
@@ -48,13 +47,10 @@ struct Config
     //const double sampleSpacing = 50;
 
     // For optimize
-    const unsigned int nGenerations = 1000;
+    const unsigned int nGenerations = 100;
     const unsigned int populationSize = 10;
     const unsigned int runsPerEvaluation = 10;
-    const unsigned int stepsPerOptRun = 2000;
-
-    // For demonstrate
-    const unsigned int stepsPerDemoRun = 4000;
+    const unsigned int stepsPerRun = 2000;
 
     // For Alife scenario.
     const double segmentSensorOffset = 0.1;

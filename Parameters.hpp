@@ -2,6 +2,7 @@
  * A place to store the parameters that we are optimizing over.
  */
 #pragma once
+#include "Config.hpp"
 
 // Custom sigmoid function to convert decision variables to the interval [-1, 1].
 // This comes from equation (4) in Gauci et al.
@@ -18,6 +19,16 @@ struct Parameters
     double spinner[6] = {0.430803, 1, 1, -0.98424, -1, 0.97215};
     double gauci3[3] = {0, 0, 0};
     */
+    Parameters() {
+        if (config.controlMethod == AlifeControlMethod::EvolvedGauci)
+            vec = {0, 0, 0};
+        else if (config.controlMethod == AlifeControlMethod::EvolvedActiveVision)
+            vec = {0, 0, 0, 0, 0, 0};
+        else if (config.controlMethod == AlifeControlMethod::EvolvedActiveVisionPlusRandom)
+            vec = {0, 0, 0, 0, 0, 0, 0, 0};
+        else
+            throw std::runtime_error("Unknown control method!");
+    }
+    std::vector<double> vec;
 
-    std::vector<double> vec = {-0.914085, 0.800751, -0.39134, -0.623223, 0.991232};
 } parameters;

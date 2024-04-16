@@ -14,7 +14,9 @@ using namespace AlifeSensing;
 
 namespace AlifeControl {
 
-ControlInput evolvedGauci3(const AlifeSensorReading &reading)
+// This is the controller for the Gauci et al. evolved controller (EvolvedGauci)
+// as well as the evolved active vision controller (EvolvedActiveVision).
+ControlInput gauciControl(const AlifeSensorReading &reading)
 {
     double angular = 0;
     if (reading.hitValue == 0)
@@ -25,6 +27,30 @@ ControlInput evolvedGauci3(const AlifeSensorReading &reading)
 
     else if (reading.hitValue == 2)
         angular = parameters.vec[2];
+
+    else
+        throw std::runtime_error("Unknown hit value");
+
+    return {config.maxForwardSpeed, angular * config.maxAngularSpeed};        
+}
+
+// This is the controller for the evolved active vision controller with random 
+// noise added (EvolvedActiveVisionPlusRandom).
+ControlInput gauciControlPlusRandom(const AlifeSensorReading &reading)
+{
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    static std::uniform_real_distribution<double> rand(-1.0, 1.0);
+
+    double angular = 0;
+    if (reading.hitValue == 0)
+        angular = parameters.vec[0] + parameters.vec[1] * rand(gen);
+
+    else if (reading.hitValue == 1)
+        angular = parameters.vec[2] + parameters.vec[3] * rand(gen);
+
+    else if (reading.hitValue == 2)
+        angular = parameters.vec[4] + parameters.vec[5] * rand(gen);
 
     else
         throw std::runtime_error("Unknown hit value");
@@ -133,8 +159,11 @@ void allRobotsSetControls(std::shared_ptr<WorldState> worldState, MapOfSensorRea
         Robot &robot = worldState->robots[robotIndex];
         const auto &sensorReading = robotIndexAndSensorReading.second;
 
-        if (config.controlMethod == AlifeControlMethod::EvolvedGauci || config.controlMethod == AlifeControlMethod::EvolvedActiveVision)
-            robot.controlInput = evolvedGauci3(sensorReading);
+        if (config.controlMethod == AlifeControlMethod::EvolvedGauci || 
+            config.controlMethod == AlifeControlMethod::EvolvedActiveVision)
+            robot.controlInput = gauciControl(sensorReading);
+        else if (config.controlMethod == AlifeControlMethod::EvolvedActiveVisionPlusRandom)
+            robot.controlInput = gauciControlPlusRandom(sensorReading);
         else
             throw std::runtime_error("Unknown control method!");
     }

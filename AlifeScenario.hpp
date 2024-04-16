@@ -83,9 +83,10 @@ public:
             ssd += (puck.pos - simWorldState->goalPos).lengthSquared();            
 
         //if (simWorldState->nRobotRobotCollisions == 0 && simWorldState->nRobotBoundaryCollisions == 0)
-            currentEvaluation = ssd;
+        //    currentEvaluation = ssd;
         //else
         //    currentEvaluation = ssd + 1;
+        currentEvaluation = ssd;
 
         // Finally, update the cumulative sum of distance * time.
         cumulativeEvaluation += currentEvaluation * stepCount;

@@ -152,6 +152,8 @@ struct Robot : public CircleBody
 
     // Represents the site for this robot's Voronoi cell.
     double siteX, siteY;
+
+    double sensorAngle;
 };
 
 }; // namespace CommonTypes

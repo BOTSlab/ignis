@@ -19,10 +19,9 @@ enum class AlifeControlMethod
 //     Bulge
 // };
 
-
 struct Config
 {
-    const AlifeControlMethod controlMethod = AlifeControlMethod::EvolvedActiveVision;
+    const AlifeControlMethod controlMethod = AlifeControlMethod::EvolvedGauci;
 
     //const OverallMethod overallMethod = OverallMethod::DilatedPolygonCurves;
     //const CurveBlendMethod curveBlendMethod = CurveBlendMethod::Bulge;
@@ -54,7 +53,7 @@ struct Config
     const unsigned int stepsPerOptRun = 2000;
 
     // For demonstrate
-    const unsigned int stepsPerDemoRun = 4000;
+    const unsigned int stepsPerDemoRun = 200;
 
     // For Alife scenario.
     const double segmentSensorOffset = 0.1;
