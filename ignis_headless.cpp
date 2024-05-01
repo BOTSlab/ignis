@@ -1,4 +1,4 @@
-#include "IgnisScenario.hpp"
+#include "ignis/IgnisScenario.hpp"
 
 int main() {
     IgnisScenario ignis;

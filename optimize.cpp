@@ -8,9 +8,9 @@
 #include <pagmo/algorithms/pso_gen.hpp>
 #include <pagmo/problem.hpp>
 
-#include "AlifeScenario.hpp"
-#include "Config.hpp"
-#include "Parameters.hpp"
+#include "alife/AlifeScenario.hpp"
+#include "common/Config.hpp"
+#include "alife/Parameters.hpp"
 
 using namespace pagmo;
 using std::cout, std::endl;

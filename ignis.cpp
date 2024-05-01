@@ -20,8 +20,8 @@
 #endif
 #include <GLFW/glfw3.h> // Will drag system OpenGL headers
 
-#include "IgnisScenario.hpp"
-#include "CommonTypes.hpp"
+#include "common/CommonTypes.hpp"
+#include "ignis/IgnisScenario.hpp"
 
 const ImVec4 red = ImVec4(1.0f, 0.0f, 0.0f, 1.00f);
 const ImVec4 green = ImVec4(0.0f, 1.0f, 0.0f, 1.00f);
