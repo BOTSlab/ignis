@@ -1,0 +1,26 @@
+Number of parameters: 5
+Problem name: the_problem
+	C++ class name: the_problem
+
+	Global dimension:			5
+	Integer dimension:			0
+	Fitness dimension:			1
+	Number of objectives:			1
+	Equality constraints dimension:		0
+	Inequality constraints dimension:	0
+	Lower bounds: [-1, -1, -1, -1, -1]
+	Upper bounds: [1, 1, 1, 1, 1]
+	Has batch fitness evaluation: false
+
+	Has gradient: false
+	User implemented gradient sparsity: false
+	Has hessians: false
+	User implemented hessians sparsity: false
+
+	Fitness evaluations: 0
+
+	Thread safety: basic
+
+Champion decision vector: 0.964327 -0.983501 -0.708194 0.707482 -0.8308
+Champion fitness: 5.24291e+12
+Duration: 50 minutes

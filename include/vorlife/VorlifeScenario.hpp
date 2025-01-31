@@ -72,7 +72,7 @@ public:
 
     void evaluateDistanceToGoal()
     {
-        currentEvaluation = simWorldState->getSSDToGoal();
+        currentEvaluation = simWorldState->getSSDPucksToGoal();
         cumulativeEvaluation += currentEvaluation * stepCount;
     }
 };

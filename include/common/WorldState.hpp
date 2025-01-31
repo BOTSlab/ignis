@@ -72,11 +72,11 @@ struct WorldState
         return sumSquaredDistances / (4 * config.puckRadius * config.puckRadius);
     }
 
-    double getSSDToGoal() const
+    double getSSDPucksToGoal() const
     {
         double sumSquaredDistances = 0.0;
-        for (const auto& robot : robots)
-            sumSquaredDistances += (robot.pos - goalPos).lengthSquared();
+        for (const auto& puck : pucks)
+            sumSquaredDistances += (puck.pos - goalPos).lengthSquared();
         return sumSquaredDistances;
     }
 };

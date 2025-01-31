@@ -7,7 +7,7 @@
 #include "common/Config.hpp"
 #include "common/CommonTypes.hpp"
 #include "vorlife/VorlifeSensing.hpp"
-#include "alife/Parameters.hpp"
+#include "forage/Parameters.hpp"
 
 using namespace CommonTypes;
 using namespace VorlifeSensing;

@@ -8,43 +8,20 @@
 #include "common/Config.hpp"
 #include "common/CommonTypes.hpp"
 #include "common/Utils.hpp"
-#include "forage/Parameters.hpp"
+#include "Forage/Parameters.hpp"
 
 
 using namespace CommonTypes;
 
-namespace VorlifeSensing {
+namespace ForageSensing {
 
-struct VorlifeSensorReading {
+struct ForageSensorReading {
     Vec2 segmentStart, segmentEnd;
     int hitValue; // 0: no hit, 1: hit puck, 2: hit robot
 };
 
 // A map from robot index to it's sensor reading.
-using MapOfSensorReadings = std::map<size_t, VorlifeSensorReading>;
-
-std::vector<CircleBody*> getAllPucks(std::shared_ptr<WorldState> worldState)
-{
-    std::vector<CircleBody*> allPucks;
-    for (CircleBody &puck : worldState->pucks)
-        allPucks.push_back(&puck);
-    return allPucks;
-}
-
-std::vector<CircleBody*> getVoronoiVisiblePucks(std::shared_ptr<WorldState> worldState, std::vector<DilatedPolygon> dilatedPolygons)
-{
-    // Assume there is only one polygon in dilatedPolygon
-    DilatedPolygon dilatedPolygon = dilatedPolygons[0];
-
-    // Go through all pucks and see if they lie within dilatedPolygon.  If so,
-    // add them to the list of visible pucks.
-    std::vector<CircleBody*> visiblePucks;
-    for (CircleBody &puck : worldState->pucks) {
-        if (dilatedPolygon.contains(puck.pos))
-            visiblePucks.push_back(&puck);
-    }
-    return visiblePucks;
-}
+using MapOfSensorReadings = std::map<size_t, ForageSensorReading>;
 
 /**
  * Gets sensor readings for all robots in the world.
@@ -52,7 +29,7 @@ std::vector<CircleBody*> getVoronoiVisiblePucks(std::shared_ptr<WorldState> worl
  * @param worldState A shared pointer to the current world state.
  * @return A map of robot indices to their corresponding sensor readings.
  */
-MapOfSensorReadings allRobotsSense(std::shared_ptr<WorldState> worldState,  GeosVoronoi::MapOfVectorOfDilatedPolygons &robotIndexToDilatedPolygonsMap)
+MapOfSensorReadings allRobotsSense(std::shared_ptr<WorldState> worldState)
 {
     MapOfSensorReadings robotIndexToSensorReadings;
 
@@ -74,32 +51,27 @@ MapOfSensorReadings allRobotsSense(std::shared_ptr<WorldState> worldState,  Geos
 
         // This is the active vision component, which can modify the sensor's angle.
         double sensorAngle = robot.theta;
-        // if (config.controlMethod == VorlifeControlMethod::EvolvedActiveVision || 
-        //     config.controlMethod == VorlifeControlMethod::EvolvedActiveVisionPlusRandom)
-        // {
+        if (config.controlMethod == ForageControlMethod::EvolvedActiveVision || 
+            config.controlMethod == ForageControlMethod::EvolvedActiveVisionPlusRandom)
+        {
             // Use the last two parameters to modify the sensor angle.
             double p1 = parameters.vec[parameters.vec.size() - 2];
             double p2 = parameters.vec[parameters.vec.size() - 1];
             sensorAngle += p1 * std::cos(alpha - p2 * M_PI);
-        // }
+//cerr << "alpha: " << alpha << " sensorAngle: " << sensorAngle << endl;            
+        }
         robot.sensorAngle = sensorAngle;
 
         Vec2 segmentStart = robot.pos + Vec2(cos(sensorAngle), sin(sensorAngle)) * (robot.radius + config.segmentSensorOffset);
         Vec2 segmentEnd = segmentStart + Vec2(cos(sensorAngle), sin(sensorAngle)) * config.segmentSensorLength;
 
-        std::vector<CircleBody*> visiblePucks;
-        if (config.useVoronoi)
-            visiblePucks = getVoronoiVisiblePucks(worldState, robotIndexToDilatedPolygonsMap[robotIndex]);
-        else
-            visiblePucks = getAllPucks(worldState);
-
         // Find the closest puck that the segment intersects.
         bool hitPuck = false;
         double closestStartToPuckDistance = std::numeric_limits<double>::max();
-        for (const CircleBody *puck : visiblePucks) {
-            if (Utils::segmentIntersectsCircle(segmentStart, segmentEnd, puck->pos, puck->radius)) {
+        for (const CircleBody &puck : worldState->pucks) {
+            if (Utils::segmentIntersectsCircle(segmentStart, segmentEnd, puck.pos, puck.radius)) {
                 hitPuck = true;
-                double distance = (puck->pos - segmentStart).length() - puck->radius;
+                double distance = (puck.pos - segmentStart).length() - puck.radius;
                 if (distance < closestStartToPuckDistance)
                     closestStartToPuckDistance = distance;
             }
@@ -108,7 +80,6 @@ MapOfSensorReadings allRobotsSense(std::shared_ptr<WorldState> worldState,  Geos
         // Find the closest other robot that the segment intersects.
         bool hitRobot = false;
         double closestStartToRobotDistance = std::numeric_limits<double>::max();
-        /*
         for (size_t otherRobotIndex = 0; otherRobotIndex < worldState->robots.size(); otherRobotIndex++) {
             if (otherRobotIndex == robotIndex)
                 continue;
@@ -121,7 +92,6 @@ MapOfSensorReadings allRobotsSense(std::shared_ptr<WorldState> worldState,  Geos
                     closestStartToRobotDistance = distance;
             }
         }
-        */
 
         int hitValue = 0;
         if (hitPuck && (!hitRobot || closestStartToPuckDistance < closestStartToRobotDistance))
@@ -135,4 +105,4 @@ MapOfSensorReadings allRobotsSense(std::shared_ptr<WorldState> worldState,  Geos
     return robotIndexToSensorReadings;
 }
 
-}; // namespace VorlifeSensing
+}; // namespace ForageSensing

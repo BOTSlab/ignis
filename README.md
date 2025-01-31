@@ -29,13 +29,13 @@ within it:
 
 # Executables
 
-```./build/alife``` GUI-based application to demonstrate swarm-based foraging approach described in paper submitted to ANTS 2024.  Loads parameters from ```last_parameters.dat```.
+```./build/forage``` GUI-based application to demonstrate swarm-based foraging approach described in paper submitted to ANTS 2024.  Loads parameters from ```last_parameters.dat```.
 
 ```./build/vorlife``` Combines the controller above with the idea of separating robots into Voronoi cells.  This is an idea with some merit, but the implementation here is crude and collisions between robots are still quite possible.
 
 ```./build/vorlife_headless``` Runs headless to generate experimental data for ```vorlife```
 
-```./build/optimize``` Uses [Pagmo2's Generational Particle Swarm Optimization](https://esa.github.io/pagmo2/docs/cpp/algorithms/pso_gen.html) algorithm to find parameters for ```alife```.
+```./build/optimize``` Uses [Pagmo2's Generational Particle Swarm Optimization](https://esa.github.io/pagmo2/docs/cpp/algorithms/pso_gen.html) algorithm to find parameters for ```forage```.
 
 ```./build/ignis``` A somewhat failed experiment to employ a planning-based approach to planar construction.
 
