@@ -15,34 +15,34 @@ plt.rcParams.update({'font.size': 9.1})
 
 BASE_NAME = "./data"
 
-ARENA_NAMES = ["vorlife"]
+ARENA_NAMES = ["demonstrate"]
 
-ARENA_LONG_NAMES = {"vorlife":"TBD"}
+ARENA_LONG_NAMES = {"demonstrate":"TBD"}
 
 BEST_TRIAL = False
 WORST_TRIAL = False
 SPECIFIC_PERFORMANCE_TRIAL = False
 SPECIFIC_PERFORMANCE = 0.1
 SPECIFIC_TRIAL = True
-SPECIFIC_TRIAL_NUMBER = 1
+SPECIFIC_TRIAL_NUMBER = 0
 
-DRAW_GOAL = True
+DRAW_GOAL = False
 DRAW_PUCKS = True
 DRAW_ROBOTS = True
 DRAW_HEATMAP_ROBOTS = False
 HEAT_MAP_FINAL_PROPORTION = 0.1
-DRAW_STAGE = 'middle' # 'start', 'middle', 'end
+DRAW_STAGE = 'end' # 'start', 'middle', 'end
 
-N_ROBOTS = 10
-N_PUCKS = 25
-SAVE_FIG = False
+N_ROBOTS = 8
+N_PUCKS = 40
+SAVE_FIG = True
 START_TRIAL = 0
-LAST_TRIAL = 9
+LAST_TRIAL = 0
 
 WIDTH = 1200
 HEIGHT = 600
 ROBOT_RADIUS = 10
-PUCK_RADIUS = 20
+PUCK_RADIUS = 25
 
 GOAL_X = 900
 GOAL_Y = 450
@@ -131,15 +131,15 @@ def draw_robot(x, y, theta, sensor_angle, axes, transparency):
         angle += delta_angle
 
     point_array = np.array(circle_points)
-    filled_polygon = plt.Polygon(point_array, color=(1, 0, 0, transparency))
+    filled_polygon = plt.Polygon(point_array, color=(0, 0, 1, transparency))
     axes.add_patch(filled_polygon)
 
-    outline_polygon = plt.Polygon(point_array, color=(0, 0, 0, transparency), fill=False)
-    axes.add_patch(outline_polygon)
+    #outline_polygon = plt.Polygon(point_array, color=(0, 0, 0, transparency), fill=False)
+    #axes.add_patch(outline_polygon)
 
     # Draw heading line
     radius = 0.9 * ROBOT_RADIUS
-    line = plt.Line2D([x, x + radius * cos(theta)], [y, y + radius * sin(theta)], color=(0, 0, 0, transparency))
+    line = plt.Line2D([x, x + radius * cos(theta)], [y, y + radius * sin(theta)], color=(1, 1, 1, transparency))
     axes.add_line(line)
 
     # Draw nominal sensor line (for sensor_angle == 0)
@@ -171,8 +171,8 @@ def puckmap(axes, puck_df, robot_df, sensor_angle_df, arena_name):
 
     if DRAW_GOAL:
         d = 20
-        line1 = plt.Line2D([GOAL_X - d, GOAL_X + d], [GOAL_Y - d, GOAL_Y + d], color=(1, 0, 1), linewidth=5)
-        line2 = plt.Line2D([GOAL_X - d, GOAL_X + d], [GOAL_Y + d, GOAL_Y - d], color=(1, 0, 1), linewidth=5)
+        line1 = plt.Line2D([GOAL_X - d, GOAL_X + d], [GOAL_Y - d, GOAL_Y + d], color=(0, 1, 0), linewidth=5)
+        line2 = plt.Line2D([GOAL_X - d, GOAL_X + d], [GOAL_Y + d, GOAL_Y - d], color=(0, 1, 0), linewidth=5)
         axes.add_line(line1)
         axes.add_line(line2)
 
@@ -189,7 +189,8 @@ def puckmap(axes, puck_df, robot_df, sensor_angle_df, arena_name):
             col = 1 + 2*i
             x = puck_df.at[row, col]
             y = puck_df.at[row, col + 1]
-            inner_circle = plt.Circle((x, y), PUCK_RADIUS, color='g', fill=True)
+            
+            inner_circle = plt.Circle((x, y), PUCK_RADIUS, color='r', fill=True)
             circle = plt.Circle((x, y), PUCK_RADIUS, color='k', fill=False)
             axes.add_patch(inner_circle)
             axes.add_patch(circle)

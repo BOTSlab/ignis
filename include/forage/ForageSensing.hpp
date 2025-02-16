@@ -8,7 +8,7 @@
 #include "common/Config.hpp"
 #include "common/CommonTypes.hpp"
 #include "common/Utils.hpp"
-#include "Forage/Parameters.hpp"
+#include "forage/Parameters.hpp"
 
 
 using namespace CommonTypes;
@@ -70,6 +70,7 @@ MapOfSensorReadings allRobotsSense(std::shared_ptr<WorldState> worldState)
         double closestStartToPuckDistance = std::numeric_limits<double>::max();
         for (const CircleBody &puck : worldState->pucks) {
             if (Utils::segmentIntersectsCircle(segmentStart, segmentEnd, puck.pos, puck.radius)) {
+                
                 hitPuck = true;
                 double distance = (puck.pos - segmentStart).length() - puck.radius;
                 if (distance < closestStartToPuckDistance)
@@ -98,7 +99,6 @@ MapOfSensorReadings allRobotsSense(std::shared_ptr<WorldState> worldState)
             hitValue = 1;
         else if (hitRobot && (!hitPuck || closestStartToRobotDistance < closestStartToPuckDistance))
             hitValue = 2;
-
         robotIndexToSensorReadings[robotIndex] = {segmentStart, segmentEnd, hitValue};
     }
 

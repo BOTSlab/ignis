@@ -6,10 +6,10 @@
 
 namespace WorldCreation {
 
-std::shared_ptr<WorldState> randomWorld() {
+std::shared_ptr<WorldState> randomWorld(unsigned int seed) {
     // Create a random number generator
-    std::random_device rd;
-    std::mt19937 gen(rd());
+    std::mt19937 gen;
+    gen.seed(seed);
 
     std::uniform_real_distribution<double> puckXDist(config.puckRadius, config.width - config.puckRadius);
     std::uniform_real_distribution<double> puckYDist(config.puckRadius, config.height - config.puckRadius);

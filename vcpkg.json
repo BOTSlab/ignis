@@ -9,7 +9,7 @@
     },
     "implot",
     "opengl",
-    "geos",
-    "pagmo2"
+    "pagmo2",
+    "tbb"
   ]
 }

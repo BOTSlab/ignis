@@ -23,13 +23,13 @@ public:
     //
     virtual void update() = 0;
     
-    virtual void reset() = 0;
+    virtual void reset(unsigned int) = 0;
 
     void step()
     {
         if (doReset) {
             doReset = false;
-            reset();
+            reset(0);
         }
         if (doPause) {
             doPause = false;

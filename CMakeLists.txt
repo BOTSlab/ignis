@@ -13,7 +13,6 @@ project(ignis)
 find_package(imgui CONFIG REQUIRED)
 find_package(implot CONFIG REQUIRED)
 find_package(OpenGL REQUIRED)
-find_package(GEOS CONFIG REQUIRED)
 find_package(Pagmo REQUIRED)
 
 # OpenMP requires some further work...
@@ -35,28 +34,19 @@ set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 
 find_package(OpenMP REQUIRED)
 
-add_executable(ignis_headless ignis_headless.cpp)
-target_link_libraries(ignis_headless PRIVATE GEOS::geos)
-
-add_executable(ignis ignis.cpp)
-target_link_libraries(ignis PRIVATE imgui::imgui implot::implot OpenGL::GL)
-target_include_directories(ignis PRIVATE imgui::imgui)
-target_link_libraries(ignis PRIVATE GEOS::geos)
+# Required for map_elites
+find_package(TBB CONFIG REQUIRED)
 
 add_executable(forage forage.cpp)
 target_link_libraries(forage PRIVATE imgui::imgui implot::implot OpenGL::GL)
 target_include_directories(forage PRIVATE imgui::imgui)
-
-add_executable(vorlife vorlife.cpp)
-target_link_libraries(vorlife PRIVATE imgui::imgui implot::implot OpenGL::GL)
-target_include_directories(vorlife PRIVATE imgui::imgui)
-target_link_libraries(vorlife PRIVATE GEOS::geos)
-
-add_executable(vorlife_headless vorlife_headless.cpp)
-target_link_libraries(vorlife_headless PRIVATE GEOS::geos)
 
 add_executable(optimize optimize.cpp)
 target_link_libraries(optimize PRIVATE Pagmo::pagmo)
 target_link_libraries(optimize PRIVATE OpenMP::OpenMP_CXX)
 #if(OpenMP_CXX_FOUND)
 #endif()
+
+add_executable(map_elites map_elites.cpp)
+target_link_libraries(map_elites PRIVATE TBB::tbb TBB::tbbmalloc)
+target_link_libraries(map_elites PRIVATE OpenMP::OpenMP_CXX)

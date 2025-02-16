@@ -30,7 +30,7 @@ struct the_problem {
         #pragma omp parallel for reduction(+:sum)
         for (int i = 0; i < config.runsPerEvaluation; ++i)
         {
-            ForageScenario scenario;
+            ForageScenario scenario(i);
             for (int j = 0; j < config.stepsPerOptRun; ++j)
                 scenario.step();
             sum += scenario.cumulativeEvaluation;

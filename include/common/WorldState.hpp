@@ -79,4 +79,25 @@ struct WorldState
             sumSquaredDistances += (puck.pos - goalPos).lengthSquared();
         return sumSquaredDistances;
     }
+
+    double getAverageRobotRobotDistance() const
+    {
+        double sumDistances = 0.0;
+        for (size_t i = 0; i < robots.size(); ++i)
+        {
+            for (size_t j = i + 1; j < robots.size(); ++j)
+            {
+                sumDistances += (robots[i].pos - robots[j].pos).length();
+            }
+        }
+        return sumDistances / (robots.size() * (robots.size() - 1) / 2);
+    }
+
+    double getAverageRobotAngularSpeed() const
+    {
+        double sumAngularSpeeds = 0.0;
+        for (const auto& robot : robots)
+            sumAngularSpeeds += robot.controlInput.angularSpeed;
+        return sumAngularSpeeds / robots.size();
+    }
 };

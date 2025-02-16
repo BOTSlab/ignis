@@ -6,8 +6,8 @@
 #include "common/WorldState.hpp"
 #include "common/Config.hpp"
 #include "common/CommonTypes.hpp"
-#include "Forage/ForageSensing.hpp"
-#include "Forage/Parameters.hpp"
+#include "forage/ForageSensing.hpp"
+#include "forage/Parameters.hpp"
 
 using namespace CommonTypes;
 using namespace ForageSensing;
@@ -29,7 +29,7 @@ ControlInput gauciControl(const ForageSensorReading &reading)
         angular = parameters.vec[2];
 
     else
-        throw std::runtime_error("Unknown hit value");
+        throw std::runtime_error("Unknown hit value: " + std::to_string(reading.hitValue));
 
     return {config.maxForwardSpeed, angular * config.maxAngularSpeed};        
 }

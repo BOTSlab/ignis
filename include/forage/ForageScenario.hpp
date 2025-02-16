@@ -12,8 +12,8 @@
 #include "common/Scenario.hpp"
 #include "common/Sim.hpp"
 #include "common/WorldCreation.hpp"
-#include "Forage/ForageSensing.hpp"
-#include "Forage/ForageControl.hpp"
+#include "forage/ForageSensing.hpp"
+#include "forage/ForageControl.hpp"
 
 using namespace ForageSensing;
 
@@ -23,9 +23,12 @@ public:
 
     double currentEvaluation = 0, cumulativeEvaluation = 0;
 
-    ForageScenario()
+    double currentAverageRobotRobotDistance = 0, cumulativeAverageRobotRobotDistance = 0;
+    double currentAverageRobotAngularSpeed = 0, cumulativeAverageRobotAngularSpeed = 0;
+
+    ForageScenario(unsigned int seed) : Scenario()
     {
-        reset();
+        reset(seed);
     }
 
     void update()
@@ -36,11 +39,17 @@ public:
             evaluateDispersion();
         else
             evaluateDistanceToGoal();
+
+        currentAverageRobotRobotDistance = simWorldState->getAverageRobotRobotDistance();
+        cumulativeAverageRobotRobotDistance += currentAverageRobotRobotDistance;
+
+        currentAverageRobotAngularSpeed = simWorldState->getAverageRobotAngularSpeed();
+        cumulativeAverageRobotAngularSpeed += currentAverageRobotAngularSpeed;
     }
 
-    void reset()
+    void reset(unsigned int seed)
     {
-        simWorldState = WorldCreation::randomWorld();
+        simWorldState = WorldCreation::randomWorld(seed);
         // Perform a number of steps to resolve any initial collisions.
         for (int i=0; i<config.coldStartSteps; i++)
             Sim::update(simWorldState);
@@ -48,6 +57,10 @@ public:
         stepCount = 0;
         currentEvaluation = 0;
         cumulativeEvaluation = 0;
+        currentAverageRobotRobotDistance = simWorldState->getAverageRobotRobotDistance();
+        cumulativeAverageRobotRobotDistance = currentAverageRobotRobotDistance;
+        currentAverageRobotAngularSpeed = simWorldState->getAverageRobotAngularSpeed();
+        cumulativeAverageRobotAngularSpeed = currentAverageRobotAngularSpeed;
     }
 
     void evaluateDispersion()

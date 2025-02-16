@@ -291,8 +291,8 @@ int main(int, char **)
     ImGui_ImplOpenGL3_Init(glsl_version);
 
     // Read in the parameters in parameters.dat into parameters.vec
-    string optimizedRunDir = "data/seq/";
-    std::ifstream lastParametersFile(optimizedRunDir + "parameters.dat");
+    string dir = "./";
+    std::ifstream lastParametersFile(dir + "parameters.dat");
     if (lastParametersFile.is_open()) {
         parameters.vec.clear();
         double value;
@@ -306,7 +306,7 @@ int main(int, char **)
     }
 
     DataLogger dataLogger(0, "data/demonstrate/");
-    ForageScenario forageScenario;
+    ForageScenario forageScenario(0);
 
     // Main loop
     for (int loopCount = 0; !glfwWindowShouldClose(window); ++loopCount) {
