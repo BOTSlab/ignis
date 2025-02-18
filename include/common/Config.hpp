@@ -35,11 +35,11 @@ struct Config
     const CurveBlendMethod curveBlendMethod = CurveBlendMethod::Bulge;
     const DilationOption dilationOption = DilationOption::DilationDelta;
 
-    const int width = 1200;
-    const int height = 600;
+    const int width = 1200; // 400; // 1200;
+    const int height = 600; // 200; // 600;
     const int coldStartSteps = 0;
-    const int numberOfRobots = 10;
-    const int numberOfPucks = 50;
+    const int numberOfRobots = 10; // 3; //10;
+    const int numberOfPucks = 50; // 5; //50;
     const double robotRadius = 10;
     const double puckRadius = 20;
     const double maxForwardSpeed = 0.25;
@@ -64,11 +64,11 @@ struct Config
     const unsigned int stepsPerOptRun = 1000;
 
     // For demonstrate
-    const unsigned int stepsPerDemoRun = 3000;
+    const unsigned int stepsPerDemoRun = 1000;
 
     // For Forage scenario.
     const double segmentSensorOffset = 0.1;
-    const double segmentSensorLength = 10000;
+    const double maxSegmentSensorLength = sqrt(width*width + height*height);
     const double slowedSteps = 0;
 
     // For Vorlife scenario.

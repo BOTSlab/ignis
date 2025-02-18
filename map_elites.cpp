@@ -5,7 +5,7 @@
 #include "forage/Parameters.hpp"
 
 template <typename Params, typename S = double>
-struct FitArm {
+struct ForagingProblem {
     using indiv_t = Eigen::Matrix<S, 1, Params::dim_search_space, Eigen::RowMajor>;
     using features_t = Eigen::Matrix<S, 1, Params::dim_features, Eigen::RowMajor>;
     // keep the intermediate values to avoid reallocations
@@ -15,9 +15,12 @@ struct FitArm {
 
     const features_t& eval(const indiv_t& v, S& fit)
     {
-        for (int i=0; i<v.size(); ++i)
-            // Remap v from the range [0, 1] to [-1, 1]
+        // Remap the first five parameters to the interval [-1, 1]
+        for (int i=0; i<4; ++i)
             parameters.vec[i] = 2 * v[i] - 1;
+        parameters.vec[5] = v[5];
+        parameters.vec[6] = v[6];
+        parameters.vec[7] = v[7];
 
         double sum = 0;
         double sumFeature1 = 0;
@@ -30,11 +33,17 @@ struct FitArm {
                 scenario.step();
             sum += scenario.cumulativeEvaluation;
 
-
             if (i == 0) {
-                // The features are defined only for the initial run.
-                sumFeature1 += scenario.cumulativeAverageRobotRobotDistance / (config.width * config.stepsPerOptRun);
-                sumFeature2 += 0.5*(1 + scenario.cumulativeAverageRobotAngularSpeed / (config.maxAngularSpeed * config.stepsPerOptRun));
+                // The features are defined only for the initial run which is
+                // based on random seed 0. Having the features vary across runs
+                // seems to impair MAP-Elites performance.
+
+                // It makes sense to use the width below, however, the realistic
+                // average distance is smaller than the width, here we choose 60% smaller.
+                //sumFeature1 += scenario.cumulativeAverageRobotRobotDistance / (config.width * config.stepsPerOptRun);
+                sumFeature1 = scenario.cumulativeAverageRobotRobotDistance / (0.6 * config.width * config.stepsPerOptRun);
+
+                sumFeature2 = 0.5*(1 + scenario.cumulativeAverageRobotAngularSpeed / (config.maxAngularSpeed * config.stepsPerOptRun));
             }
         }
 
@@ -59,7 +68,7 @@ struct FitArm {
 
 struct Params {
     static constexpr int dim_features = 2;
-    static constexpr int dim_search_space = 5;
+    static constexpr int dim_search_space = 8;
     static constexpr int batch_size = 1; //8; // 128;
     static constexpr double sigma_1 = 0.15;
     static constexpr double sigma_2 = 0.01;
@@ -72,7 +81,7 @@ struct Params {
 
 int main()
 {
-    using fit_t = FitArm<Params, float>;
+    using fit_t = ForagingProblem<Params, float>;
     using map_elites_t = map_elites::MapElites<Params, fit_t, float>;
 
     auto start = std::chrono::high_resolution_clock::now();
@@ -82,7 +91,7 @@ int main()
 
     // With a batch_size of 1, 1000 steps takes about 4 minutes
     // if grid is false, then 1000 steps is about 6 minutes
-    size_t n = 10000; // 1e6;
+    size_t n = 20000; // 1e6;
     for (size_t i = 0; i < n / Params::batch_size; ++i) {
         map_elites.step();
         qd_ofs << i * Params::batch_size << " " << map_elites.qd_score() << std::endl;

@@ -23,7 +23,7 @@ struct Parameters
         if (config.controlMethod == ForageControlMethod::EvolvedGauci)
             vec = {0, 0, 0};
         else if (config.controlMethod == ForageControlMethod::EvolvedActiveVision)
-            vec = {0, 0, 0, 0, 0};
+            vec = {0, 0, 0, 0, 0, 1, 1, 1};
         else if (config.controlMethod == ForageControlMethod::EvolvedActiveVisionPlusRandom)
             vec = {0, 0, 0, 0, 0, 0, 0, 0};
         else

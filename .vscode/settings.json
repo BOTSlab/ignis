@@ -94,6 +94,7 @@
         "strstream": "cpp",
         "typeindex": "cpp",
         "execution": "cpp",
-        "__memory": "cpp"
+        "__memory": "cpp",
+        "print": "cpp"
     }
 }

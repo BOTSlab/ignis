@@ -16,6 +16,7 @@ namespace ForageControl {
 
 // This is the controller for the Gauci et al. evolved controller (EvolvedGauci)
 // as well as the evolved active vision controller (EvolvedActiveVision).
+/*
 ControlInput gauciControl(const ForageSensorReading &reading)
 {
     double angular = 0;
@@ -33,9 +34,31 @@ ControlInput gauciControl(const ForageSensorReading &reading)
 
     return {config.maxForwardSpeed, angular * config.maxAngularSpeed};        
 }
+*/
+
+ControlInput eightParameterControl(const ForageSensorReading &reading)
+{
+    double forward = 0;
+    double angular = 0;
+    if (!reading.puckReading.hit && !reading.robotReading.hit) {
+        forward = 1;
+        angular = parameters.vec[0];
+
+    } else if (reading.robotReading.hit) {
+        forward = 1;
+        angular = parameters.vec[1];
+
+    } else if (reading.puckReading.hit) {
+        forward = 1;
+        angular = parameters.vec[2];
+    }
+
+    return {forward * config.maxForwardSpeed, angular * config.maxAngularSpeed};        
+}
 
 // This is the controller for the evolved active vision controller with random 
 // noise added (EvolvedActiveVisionPlusRandom).
+/*
 ControlInput gauciControlPlusRandom(const ForageSensorReading &reading)
 {
     static std::random_device rd;
@@ -57,6 +80,7 @@ ControlInput gauciControlPlusRandom(const ForageSensorReading &reading)
 
     return {config.maxForwardSpeed, angular * config.maxAngularSpeed};        
 }
+*/
 
 /*
 ControlInput evolvedCubic(const ForageSensorReading &reading)
@@ -159,13 +183,14 @@ void allRobotsSetControls(std::shared_ptr<WorldState> worldState, ForageSensing:
         Robot &robot = worldState->robots[robotIndex];
         const auto &sensorReading = robotIndexAndSensorReading.second;
 
-        if (config.controlMethod == ForageControlMethod::EvolvedGauci || 
-            config.controlMethod == ForageControlMethod::EvolvedActiveVision)
-            robot.controlInput = gauciControl(sensorReading);
-        else if (config.controlMethod == ForageControlMethod::EvolvedActiveVisionPlusRandom)
-            robot.controlInput = gauciControlPlusRandom(sensorReading);
-        else
-            throw std::runtime_error("Unknown control method!");
+//        if (config.controlMethod == ForageControlMethod::EvolvedGauci || 
+//            config.controlMethod == ForageControlMethod::EvolvedActiveVision)
+//            robot.controlInput = gauciControl(sensorReading);
+            robot.controlInput = eightParameterControl(sensorReading);
+//        else if (config.controlMethod == ForageControlMethod::EvolvedActiveVisionPlusRandom)
+//            robot.controlInput = gauciControlPlusRandom(sensorReading);
+//        else
+//            throw std::runtime_error("Unknown control method!");
     }
 }
 

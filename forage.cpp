@@ -133,23 +133,29 @@ void perRobotPlots(size_t robotIndex, const ForageScenario &forageScenario, doub
         oss << "Sensors for robot " << robotIndex;
         double sensorSize = 0.1 * config.robotRadius;
 
-        const ForageSensorReading &sensorReading = forageScenario.robotIndexToSensorReadingMap.at(robotIndex);
-        std::vector<double> xs = {sensorReading.segmentStart.x, sensorReading.segmentEnd.x};
-        std::vector<double> ys = {sensorReading.segmentStart.y, sensorReading.segmentEnd.y};
+        const ForageSensorReading &reading = forageScenario.robotIndexToSensorReadingMap.at(robotIndex);
+        std::vector<double> segmentXs;
+        std::vector<double> segmentYs;
 
-        if (sensorReading.hitValue == 0) {
-            ImPlot::SetNextLineStyle(gray, 2);
-        } else if (sensorReading.hitValue == 1) {
-            ImPlot::SetNextLineStyle(green, 4);
-        } else if (sensorReading.hitValue == 2) {
+        bool drawSegment = false;
+        if (reading.robotReading.hit) {
+            segmentXs = {reading.robotReading.segmentStart.x, reading.robotReading.segmentEnd.x};
+            segmentYs = {reading.robotReading.segmentStart.y, reading.robotReading.segmentEnd.y};
             ImPlot::SetNextLineStyle(red, 4);
-        } else {
-            throw std::runtime_error("Unknown hit value");
+            drawSegment = true;
+
+        } else if (reading.puckReading.hit) {
+            segmentXs = {reading.puckReading.segmentStart.x, reading.puckReading.segmentEnd.x};
+            segmentYs = {reading.puckReading.segmentStart.y, reading.puckReading.segmentEnd.y};
+            ImPlot::SetNextLineStyle(green, 4);
+            drawSegment = true;
         }
 
-        ImPlot::HideNextItem();
-        ImPlot::PlotLine("SegmentSensors", xs.data(), ys.data(), 2);        
+        //ImPlot::HideNextItem();
+        if (drawSegment)
+            ImPlot::PlotLine("SegmentSensors", segmentXs.data(), segmentYs.data(), 2);        
     }
+
 //cout << "perRobotPlots - END" << endl;
 }
 
@@ -326,10 +332,10 @@ int main(int, char **)
         if (loopCount % loopsPerUpdate == 0) {
             //cout << "loopCount: " << loopCount << endl;
 // HACK FOR PLOTTING: Force the goal position
-//if (!forageScenario.isPaused()) {
-//forageScenario.simWorldState->goalPos = Vec2(900, 450);
+if (!forageScenario.isPaused()) {
+forageScenario.simWorldState->goalPos = Vec2(300, 150);
 //cout << "goalPos: " << forageScenario.simWorldState->goalPos.x << ", " << forageScenario.simWorldState->goalPos.y << endl;
-//}
+}
 
             if (forageScenario.getStepCount() == config.stepsPerDemoRun)
                 forageScenario.prepareToPause();

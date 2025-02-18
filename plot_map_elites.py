@@ -108,7 +108,7 @@ def load_centroids(filename):
     points = np.loadtxt(filename)
     return points
 
-def plot_cvt(ax, centroids, fit, min_fit, max_fit):
+def plot_cvt(ax, centroids, fit, min_fit, max_fit, archive):
     # compute Voronoi tesselation
     print("Voronoi...")
     vor = Voronoi(centroids[:,0:2])
@@ -136,22 +136,44 @@ def plot_cvt(ax, centroids, fit, min_fit, max_fit):
         #print("Fit: ", fit[i])
         #print("norm(fit): ", norm(fit[i]))
         #print("Color to use: ", color_to_use)
-        ax.fill(*zip(*polygon), alpha=0.9, color=color_to_use)
+        #ax.fill(*zip(*polygon), alpha=0.9, color=color_to_use)
         k += 1
         if k % 100 == 0:
             print(k, end=" ", flush=True)
+                
+        polygon_patch = plt.Polygon(polygon, closed=True, fill=True, edgecolor='black', facecolor=color_to_use, alpha=0.9)
+        ax.add_patch(polygon_patch)
+        
+        # Prepare to handle click events, printing the index of the clicked polygon
+        polygon_patch.set_picker(True)
+        polygon_patch.i = i
+
+    def on_pick(event):
+        polygon = event.artist
+        print("Picked index:", polygon.i)
+        # Map the first 5 entries of the archive row from [0, 1] to [-1, 1]
+        picked = archive[polygon.i].copy()
+        picked[:5] = 2 * picked[:5] - 1
+        print("Picked:", picked)
+
+    fig.canvas.mpl_connect('pick_event', on_pick)
+    
+    ax.set_xlabel('Cum. Avg. Robot-Robot Distance')
+    ax.set_ylabel('Cum. Avg. Turning Rate')
+    ax.set_xlim(0.25, 1)
+    fig.colorbar(cm.ScalarMappable(norm=norm, cmap=my_cmap), ax=ax)
+        
    # fit_reshaped = fit.reshape((len(fit),))
 #    sc = ax.scatter(desc[:,0], desc[:,1], c=fit_reshaped, cmap=my_cmap, s=10, zorder=0)
 
-    # Highlight the point with the highest fitness in red
-    max_fit_index = np.argmax(fit)
-    ax.scatter(centroids[max_fit_index, 0], centroids[max_fit_index, 1], color='red', s=100, edgecolor='black', zorder=2)
-
-    # Highlight points with fitness in the top 1%
-    threshold = np.percentile(fit, 99)
-    print("Threshold: ", threshold)
-    elite_points = centroids[fit.flatten() >= threshold]
-    ax.scatter(elite_points[:, 0], elite_points[:, 1], color='cyan', s=50, edgecolor='black', zorder=1)
+    # Highlight the top n_elites in the plot
+    n_elites = 20
+    for i in range(1, n_elites + 1):
+        fit_index = np.argpartition(fit, i)[i]
+        cx, cy = centroids[fit_index, 0], centroids[fit_index, 1]
+        ax.scatter(cx, cy, marker='.', edgecolor='red', facecolors=(1,1,1,0), s=200 - i*10, zorder=2, linewidths=2)
+        #ax.scatter(cx, cy, marker='o', edgecolor='red', facecolors=(1,1,1,0), s=175, zorder=2, linewidths=2)
+        #ax.text(cx + 0.03, cy, str(i), fontsize=22, color='red', ha='center', va='center', zorder=3)
 
 if __name__ == "__main__":
     if len(sys.argv) < 4:
@@ -162,36 +184,37 @@ if __name__ == "__main__":
     centroids = np.loadtxt(sys.argv[3])
     #print("Fitness max : ", max(fit))
     print("Fitness max : ", fit.max())
-    index = np.argmax(fit)
-    print("Index of max fitness : ", index)
+    index = np.argmin(fit)
+    print("Index of min fitness : ", index)
     
     elite = archive[index]
-    # Remap the values in the archive from the range [0, 1] to the range [-1, 1]
-    elite = 2 * elite - 1
+    # Remap the first 5 values in the archive from the range [0, 1] to the range [-1, 1]
+    elite[:5] = 2 * elite[:5] - 1
     
-    print("Row of archive with max fitness : ", elite)
+    print("Row of archive with min fitness : ", elite)
     
     print("Fitness min : ", fit.min())
     
     unique_fit = np.unique(fit)
-    second_min_fit = None
+    second_max_fit = None
     if len(unique_fit) > 1:
-        second_min_fit = np.partition(unique_fit, 1)[1]
-        print("Second lowest distinct fitness value:", second_min_fit)
+        second_max_fit = np.partition(unique_fit, -2)[-2]
+        print("Second highest distinct fitness value:", second_max_fit)
     else:
-        print("There is no second distinct fitness value.")
+        print("There is no second highest distinct fitness value.")
         exit(0)
     
     print("Average fit:", fit.sum() / fit.shape[0])
 
-    min_fit = second_min_fit
-    max_fit = fit.max()
+    min_fit = fit.min()
+    max_fit = second_max_fit
         
     print("Min = {} Max={}".format(min_fit, max_fit))
     # Plot
     fig, axes = plt.subplots(1, 1, figsize=(10, 10), facecolor='white', edgecolor='white')
     axes.set_xlim(0, 1)
     axes.set_ylim(0, 1)
-    plot_cvt(axes, centroids, fit, min_fit, max_fit)
+    plot_cvt(axes, centroids, fit, min_fit, max_fit, archive)
+
     fig.savefig('cvt.pdf')
-    fig.savefig('cvt.png')
+    plt.show()

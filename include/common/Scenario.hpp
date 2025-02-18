@@ -18,6 +18,11 @@ public:
     bool doUnpause = false;
     bool doStepOnce = false;
 
+    // Every time prepareToReset is called, we'll increment this
+    // so that the scenario can reset itself in a different way
+    // depending on the value of this variable.
+    unsigned int resetCount = 0;
+
     //
     // Subclasses must implement these two methods...
     //
@@ -29,7 +34,7 @@ public:
     {
         if (doReset) {
             doReset = false;
-            reset(0);
+            reset(resetCount);
         }
         if (doPause) {
             doPause = false;
@@ -62,6 +67,7 @@ public:
     void prepareToReset()
     {
         doReset = true;
+        resetCount++;
     }
 
     void prepareToPause()

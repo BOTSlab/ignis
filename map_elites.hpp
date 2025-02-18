@@ -62,8 +62,9 @@ namespace map_elites {
         {
             double qd = 0;
             for (int i = 0; i < Params::num_cells; ++i)
-                if (_archive_fit(i) != -std::numeric_limits<S>::max())
-                    qd += _archive_fit(i);
+//            if (_archive_fit(i) != -std::numeric_limits<S>::max())
+if (_archive_fit(i) != std::numeric_limits<S>::max())
+            qd += _archive_fit(i);
             return qd;
         }
 
@@ -108,7 +109,8 @@ namespace map_elites {
                 else {
                     (_centroids.rowwise() - _batch_features.row(i)).rowwise().squaredNorm().minCoeff(&best_i);
                 }
-                if (_batch_fitness(i) > _archive_fit(best_i))
+//                if (_batch_fitness(i) > _archive_fit(best_i))
+if (_batch_fitness(i) < _archive_fit(best_i))
                     _new_id[i] = best_i;
             });
 
@@ -116,7 +118,8 @@ namespace map_elites {
             for (int i = 0; i < Params::batch_size; ++i) {
                 if (_new_id[i] != -1) {
                     _archive.row(_new_id[i]) = _batch.row(i);
-                    if (_archive_fit(_new_id[i]) == -std::numeric_limits<S>::max())
+//                    if (_archive_fit(_new_id[i]) == -std::numeric_limits<S>::max())
+if (_archive_fit(_new_id[i]) == std::numeric_limits<S>::max())
                         _filled_ids.push_back(_new_id[i]);
                     _archive_fit(_new_id[i]) = _batch_fitness(i);
                 }
@@ -153,7 +156,8 @@ namespace map_elites {
         // our main data
         centroids_t _centroids = _rand<centroids_t>();
         archive_t _archive = _rand<archive_t>();
-        archive_fit_t _archive_fit = archive_fit_t::Constant(-std::numeric_limits<S>::max());
+//        archive_fit_t _archive_fit = archive_fit_t::Constant(-std::numeric_limits<S>::max());
+archive_fit_t _archive_fit = archive_fit_t::Constant(std::numeric_limits<S>::max());
 
         // internal list of filled cells
         std::vector<int> _filled_ids;
