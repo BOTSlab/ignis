@@ -28,24 +28,26 @@ SPECIFIC_TRIAL_NUMBER = 0
 
 DRAW_GOAL = True
 DRAW_PUCKS = True
-DRAW_ROBOTS = False
-DRAW_HEATMAP_ROBOTS = True
-HEAT_MAP_FINAL_PROPORTION = 0.25
-DRAW_STAGE = 'end' # 'start', 'middle', 'end
+DRAW_ROBOTS = True
+DRAW_HEATMAP_ROBOTS = False
+HEAT_MAP_FINAL_PROPORTION = 0.05
 
-N_ROBOTS = 1 # 10
-N_PUCKS = 5 # 50
+# The "HEATMAP" feature can be used for 'eighth', 'middle' and 'end' but not for 'start'
+DRAW_STAGE = 'start' # 'start', 'eighth', 'middle', 'end
+
+N_ROBOTS = None
+N_PUCKS = None
 SAVE_FIG = True
 START_TRIAL = 0
 LAST_TRIAL = 0
 
-WIDTH = 400 #1200
-HEIGHT = 200 #600
+WIDTH = 800 #1200
+HEIGHT = 400 #600
 ROBOT_RADIUS = 10
 PUCK_RADIUS = 20
 
-GOAL_X = 900
-GOAL_Y = 450
+GOAL_X = 300
+GOAL_Y = 150
 
 def main():
     fig, axes = plt.subplots(1, len(ARENA_NAMES), sharex='col', squeeze=False)
@@ -68,6 +70,7 @@ def main():
         fig.savefig(filename, bbox_inches='tight')
 
 def puckmap_for_arena(axes, arena_name):
+    global N_ROBOTS, N_PUCKS
     print(f"puckmap_for_arena for arena: {arena_name}")
 
     chosen_puck_df = None
@@ -82,6 +85,12 @@ def puckmap_for_arena(axes, arena_name):
         robot_df = dataframe_per_trial('robotPose', arena_name, trial)
         sensor_angle_df = dataframe_per_trial('robotSensorAngle', arena_name, trial)
         puck_df = dataframe_per_trial('puckPosition', arena_name, trial)
+        
+        # Compute the number of pucks and robots
+        N_PUCKS = (len(puck_df.columns) - 1) // 2
+        N_ROBOTS = (len(robot_df.columns) - 1) // 3
+        print(f"Number of pucks: {N_PUCKS}")
+        print(f"Number of robots: {N_ROBOTS}")
 
         if SPECIFIC_TRIAL and trial == SPECIFIC_TRIAL_NUMBER:
             puckmap(axes, puck_df, robot_df, sensor_angle_df, arena_name)
@@ -179,6 +188,8 @@ def puckmap(axes, puck_df, robot_df, sensor_angle_df, arena_name):
     if DRAW_PUCKS:
         if DRAW_STAGE == 'start':
             row = 0
+        elif DRAW_STAGE == 'eighth':
+            row = len(puck_df) // 8
         elif DRAW_STAGE == 'middle':
             row = len(puck_df) // 2
         elif DRAW_STAGE == 'end':       
@@ -195,27 +206,34 @@ def puckmap(axes, puck_df, robot_df, sensor_angle_df, arena_name):
             axes.add_patch(inner_circle)
             axes.add_patch(circle)
 
-    if DRAW_ROBOTS:
+    robot_row = 0
+    if DRAW_ROBOTS or DRAW_HEATMAP_ROBOTS:
         if DRAW_STAGE == 'start':
-            row = 0
+            robot_row = 0
+        elif DRAW_STAGE == 'eighth':
+            robot_row = len(robot_df) // 8
         elif DRAW_STAGE == 'middle':
-            row = len(robot_df) // 2
+            robot_row = len(robot_df) // 2
         elif DRAW_STAGE == 'end':       
-            row = len(robot_df) - 1
+            robot_row = len(robot_df) - 1
         else:
             raise ValueError(f"Unknown DRAW_STAGE: {DRAW_STAGE}")
+
+    if DRAW_ROBOTS:
         for i in range(N_ROBOTS):
             col = 1 + 3*i
             x = robot_df.at[row, col]
             y = robot_df.at[row, col + 1]
             theta = robot_df.at[row, col + 2]
-            sensor_angle = sensor_angle_df.at[row, 1 + i]
+            sensor_angle = sensor_angle_df.at[robot_row, 1 + i]
             draw_robot(x, y, theta, sensor_angle, axes, 1)
 
-    n_rows = len(robot_df)
+    total_rows = len(robot_df)
     if DRAW_HEATMAP_ROBOTS:
-        start_row = int(n_rows * (1 - HEAT_MAP_FINAL_PROPORTION))
-        for row in range(start_row, n_rows):
+        #start_row = int(total_rows * (1 - HEAT_MAP_FINAL_PROPORTION))
+        n_heatmap_rows = int(total_rows * HEAT_MAP_FINAL_PROPORTION)
+        start_row = robot_row - n_heatmap_rows
+        for row in range(start_row, robot_row):
             print(f"Drawing row {row}")
             for i in range(N_ROBOTS):
                 col = 1 + 3*i
@@ -223,7 +241,7 @@ def puckmap(axes, puck_df, robot_df, sensor_angle_df, arena_name):
                 y = robot_df.at[row, col + 1]
                 theta = robot_df.at[row, col + 2]
                 sensor_angle = sensor_angle_df.at[row, 1 + i]
-                transparency = ((row - start_row) / (n_rows * HEAT_MAP_FINAL_PROPORTION)) ** 2
+                transparency = ((row - start_row) / (n_heatmap_rows)) ** 2
                 print(f"transparency: {transparency}")
                 draw_robot(x, y, theta, sensor_angle, axes, transparency)
 

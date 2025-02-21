@@ -133,29 +133,23 @@ void perRobotPlots(size_t robotIndex, const ForageScenario &forageScenario, doub
         oss << "Sensors for robot " << robotIndex;
         double sensorSize = 0.1 * config.robotRadius;
 
-        const ForageSensorReading &reading = forageScenario.robotIndexToSensorReadingMap.at(robotIndex);
-        std::vector<double> segmentXs;
-        std::vector<double> segmentYs;
+        const ForageSensorReading &sensorReading = forageScenario.robotIndexToSensorReadingMap.at(robotIndex);
+        std::vector<double> xs = {sensorReading.segmentStart.x, sensorReading.segmentEnd.x};
+        std::vector<double> ys = {sensorReading.segmentStart.y, sensorReading.segmentEnd.y};
 
-        bool drawSegment = false;
-        if (reading.robotReading.hit) {
-            segmentXs = {reading.robotReading.segmentStart.x, reading.robotReading.segmentEnd.x};
-            segmentYs = {reading.robotReading.segmentStart.y, reading.robotReading.segmentEnd.y};
-            ImPlot::SetNextLineStyle(red, 4);
-            drawSegment = true;
-
-        } else if (reading.puckReading.hit) {
-            segmentXs = {reading.puckReading.segmentStart.x, reading.puckReading.segmentEnd.x};
-            segmentYs = {reading.puckReading.segmentStart.y, reading.puckReading.segmentEnd.y};
+        if (sensorReading.hitValue == 0) {
+            ImPlot::SetNextLineStyle(gray, 2);
+        } else if (sensorReading.hitValue == 1) {
             ImPlot::SetNextLineStyle(green, 4);
-            drawSegment = true;
+        } else if (sensorReading.hitValue == 2) {
+            ImPlot::SetNextLineStyle(red, 4);
+        } else {
+            throw std::runtime_error("Unknown hit value");
         }
 
-        //ImPlot::HideNextItem();
-        if (drawSegment)
-            ImPlot::PlotLine("SegmentSensors", segmentXs.data(), segmentYs.data(), 2);        
+        ImPlot::HideNextItem();
+        ImPlot::PlotLine("SegmentSensors", xs.data(), ys.data(), 2);        
     }
-
 //cout << "perRobotPlots - END" << endl;
 }
 
@@ -235,8 +229,9 @@ void handleControlsWindow(ForageScenario &forageScenario, ImGuiIO &io)
     ImGui::Text("step count: %d", forageScenario.getStepCount());
     ImGui::Text("evaluation: %g", forageScenario.currentEvaluation);
     ImGui::Text("cum. eval.: %g", forageScenario.cumulativeEvaluation);
-    ImGui::Text("r-r collsions: %d", forageScenario.simWorldState->nRobotRobotCollisions);
-    ImGui::Text("r-b collsions: %d", forageScenario.simWorldState->nRobotBoundaryCollisions);
+    ImGui::Text("steps with r-r collsions: %d", forageScenario.stepsWithRobotRobotCollisions);
+    //ImGui::Text("r-r collsions: %d", forageScenario.simWorldState->nRobotRobotCollisions);
+    //ImGui::Text("r-b collsions: %d", forageScenario.simWorldState->nRobotBoundaryCollisions);
     ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
     ImGui::End();
 }
@@ -343,7 +338,7 @@ forageScenario.simWorldState->goalPos = Vec2(300, 150);
             forageScenario.step();
             
             int stepCount = forageScenario.getStepCount();
-            if (!forageScenario.isPaused() && (stepCount == 0 || stepCount % 50 == 0))
+            if (!forageScenario.isPaused() && (stepCount == 0 || stepCount % 10 == 0))
                 dataLogger.writeToFile(forageScenario.simWorldState, forageScenario.getStepCount(), forageScenario.currentEvaluation, forageScenario.cumulativeEvaluation);
         }
 

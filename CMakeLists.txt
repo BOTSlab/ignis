@@ -50,3 +50,6 @@ target_link_libraries(optimize PRIVATE OpenMP::OpenMP_CXX)
 add_executable(map_elites map_elites.cpp)
 target_link_libraries(map_elites PRIVATE TBB::tbb TBB::tbbmalloc)
 target_link_libraries(map_elites PRIVATE OpenMP::OpenMP_CXX)
+
+add_executable(compare_controllers compare_controllers.cpp)
+target_link_libraries(compare_controllers PRIVATE OpenMP::OpenMP_CXX)

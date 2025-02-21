@@ -18,13 +18,10 @@ struct ForagingProblem {
         // Remap the first five parameters to the interval [-1, 1]
         for (int i=0; i<4; ++i)
             parameters.vec[i] = 2 * v[i] - 1;
-        parameters.vec[5] = v[5];
-        parameters.vec[6] = v[6];
-        parameters.vec[7] = v[7];
 
         double sum = 0;
-        double sumFeature1 = 0;
-        double sumFeature2 = 0;
+        //double sumFeature1 = 0;
+        //double sumFeature2 = 0;
         #pragma omp parallel for reduction(+:sum)
         for (int i = 0; i < config.runsPerEvaluation; ++i)
         {
@@ -33,28 +30,37 @@ struct ForagingProblem {
                 scenario.step();
             sum += scenario.cumulativeEvaluation;
 
-            if (i == 0) {
+            //if (i == 0) {
                 // The features are defined only for the initial run which is
                 // based on random seed 0. Having the features vary across runs
                 // seems to impair MAP-Elites performance.
 
                 // It makes sense to use the width below, however, the realistic
-                // average distance is smaller than the width, here we choose 60% smaller.
-                //sumFeature1 += scenario.cumulativeAverageRobotRobotDistance / (config.width * config.stepsPerOptRun);
-                sumFeature1 = scenario.cumulativeAverageRobotRobotDistance / (0.6 * config.width * config.stepsPerOptRun);
+                // average distance is smaller than the width, here we choose 50% smaller.
+                //sumFeature1 = scenario.cumulativeAverageRobotRobotDistance / (config.width * config.stepsPerOptRun);
+                //sumFeature1 = scenario.cumulativeAverageRobotRobotDistance / (0.5 * config.width * config.stepsPerOptRun);
+                //sumFeature1 = 0.5*(1 + scenario.cumulativeAverageRobotAngularSpeed / (config.maxAngularSpeed * config.stepsPerOptRun));
+                
 
-                sumFeature2 = 0.5*(1 + scenario.cumulativeAverageRobotAngularSpeed / (config.maxAngularSpeed * config.stepsPerOptRun));
-            }
+                //sumFeature2 = scenario.currentAverageRobotRobotDistance / (0.6 * config.width);
+                //sumFeature2 = scenario.stepsWithRobotRobotCollisions / config.stepsPerOptRun;
+                //double maxStepsPerRun = 100;
+                //sumFeature2 =  scenario.stepsWithRobotRobotCollisions;
+                //if (sumFeature2 > maxStepsPerRun)
+                //    sumFeature2 = maxStepsPerRun;
+                //sumFeature2 /= maxStepsPerRun;
+            //}
         }
 
         fit = sum / config.runsPerEvaluation;
     
         // Choosing the last two parameters as features
-        // _features[0] = 0.5 * (1 + parameters.vec[3]);
-        // _features[1] = 0.5 * (1 + parameters.vec[4]);
+        _features[0] = v[3];
+        _features[1] = v[4];
 
-        _features[0] = sumFeature1;
-        _features[1] = sumFeature2;
+        //_features[0] = sumFeature1;
+        //_features[1] = sumFeature2;
+        // cout << "Features: " << _features[0] << " " << _features[1] << endl;
 
         //fit = 1 - std::sqrt((v.array() - v.mean()).square().sum() / (v.size() - 1.0));
         //_t = 2 * M_PI * v.array() - M_PI;
@@ -68,13 +74,13 @@ struct ForagingProblem {
 
 struct Params {
     static constexpr int dim_features = 2;
-    static constexpr int dim_search_space = 8;
+    static constexpr int dim_search_space = 5;
     static constexpr int batch_size = 1; //8; // 128;
     static constexpr double sigma_1 = 0.15;
     static constexpr double sigma_2 = 0.01;
     static constexpr double infill_pct = 0.2;
     static constexpr bool verbose = false;
-    static constexpr bool grid = false;
+    static constexpr bool grid = true;
     static constexpr int grid_size = 64;
     static constexpr int num_cells = grid ? grid_size * grid_size : 12000; // 12000; // 8192;
 };

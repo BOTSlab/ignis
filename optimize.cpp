@@ -49,6 +49,7 @@ struct the_problem {
     }
 };
 
+
 int main()
 {
     // Prompting the user for a base name, then create a directory with that

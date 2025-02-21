@@ -25,6 +25,7 @@ public:
 
     double currentAverageRobotRobotDistance = 0, cumulativeAverageRobotRobotDistance = 0;
     double currentAverageRobotAngularSpeed = 0, cumulativeAverageRobotAngularSpeed = 0;
+    int stepsWithRobotRobotCollisions = 0;
 
     ForageScenario(unsigned int seed) : Scenario()
     {
@@ -45,6 +46,10 @@ public:
 
         currentAverageRobotAngularSpeed = simWorldState->getAverageRobotAngularSpeed();
         cumulativeAverageRobotAngularSpeed += currentAverageRobotAngularSpeed;
+
+        if (simWorldState->nRobotRobotCollisions > 0)
+            stepsWithRobotRobotCollisions++;
+        simWorldState->resetCollisionCounts();
     }
 
     void reset(unsigned int seed)
@@ -61,6 +66,7 @@ public:
         cumulativeAverageRobotRobotDistance = currentAverageRobotRobotDistance;
         currentAverageRobotAngularSpeed = simWorldState->getAverageRobotAngularSpeed();
         cumulativeAverageRobotAngularSpeed = currentAverageRobotAngularSpeed;
+        stepsWithRobotRobotCollisions = 0;
     }
 
     void evaluateDispersion()

@@ -158,20 +158,34 @@ def plot_cvt(ax, centroids, fit, min_fit, max_fit, archive):
 
     fig.canvas.mpl_connect('pick_event', on_pick)
     
-    ax.set_xlabel('Cum. Avg. Robot-Robot Distance')
-    ax.set_ylabel('Cum. Avg. Turning Rate')
-    ax.set_xlim(0.25, 1)
+    # Change the values displayed on the axes, remapping from [0, 1] to [-1, 1]
+    ax.xaxis.set_major_formatter(FuncFormatter(lambda x, _: '{:.1f}'.format(2 * x - 1)))
+    ax.yaxis.set_major_formatter(FuncFormatter(lambda y, _: '{:.1f}'.format(2 * y - 1)))
+    
+    #ax.set_xlabel('Cum. Avg. Robot-Robot Distance')
+    #ax.set_ylabel('Steps With Robot-Robot Collisions')
+    ax.set_xlabel('$K_3$')
+    ax.set_ylabel('$K_4$')
+    
+    # Increase the size of the x and y labels
+    ax.xaxis.label.set_size(20)
+    ax.yaxis.label.set_size(20)
+    
+    ax.set_xlim(0, 1)
     fig.colorbar(cm.ScalarMappable(norm=norm, cmap=my_cmap), ax=ax)
         
    # fit_reshaped = fit.reshape((len(fit),))
 #    sc = ax.scatter(desc[:,0], desc[:,1], c=fit_reshaped, cmap=my_cmap, s=10, zorder=0)
 
     # Highlight the top n_elites in the plot
-    n_elites = 20
+    n_elites = 0
+    max_marker_size = 200
     for i in range(1, n_elites + 1):
         fit_index = np.argpartition(fit, i)[i]
         cx, cy = centroids[fit_index, 0], centroids[fit_index, 1]
-        ax.scatter(cx, cy, marker='.', edgecolor='red', facecolors=(1,1,1,0), s=200 - i*10, zorder=2, linewidths=2)
+        
+        ax.scatter(cx, cy, marker='X', color='red', s=150, zorder=2, linewidths=1)
+        #size = max_marker_size - (i - 1) * max_marker_size / n_elites
         #ax.scatter(cx, cy, marker='o', edgecolor='red', facecolors=(1,1,1,0), s=175, zorder=2, linewidths=2)
         #ax.text(cx + 0.03, cy, str(i), fontsize=22, color='red', ha='center', va='center', zorder=3)
 
