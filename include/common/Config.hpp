@@ -29,21 +29,21 @@ enum class DilationOption
 
 struct Config
 {
-    const ForageControlMethod controlMethod = ForageControlMethod::EvolvedActiveVision;
+    const ForageControlMethod controlMethod = ForageControlMethod::EvolvedGauci;
 
     const OverallMethod overallMethod = OverallMethod::DilatedPolygonCurves;
     const CurveBlendMethod curveBlendMethod = CurveBlendMethod::Bulge;
     const DilationOption dilationOption = DilationOption::DilationDelta;
 
-    const int width = 800; // 1200;
-    const int height = 400; // 600;
+    const int width = 800;
+    const int height = 400;
     const int coldStartSteps = 0;
-    const int numberOfRobots = 5; //10;
-    const int numberOfPucks = 20; //50;
+    const int numberOfRobots = 5;
+    const int numberOfPucks = 20;
     const double robotRadius = 10;
     const double puckRadius = 20;
     const double maxForwardSpeed = 0.25;
-    const double maxAngularSpeed = 1.0; // 0.1;
+    const double maxAngularSpeed = 1.0;
 
     // For curve judgment.
     const int maxStallSteps = 1000;

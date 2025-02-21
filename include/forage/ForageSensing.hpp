@@ -37,6 +37,7 @@ ForageSensorReading senseAlongSegment(
 
     // This is the active vision component, which can modify the sensor's angle.
     double sensorAngle = robot.theta;
+/*
     if (config.controlMethod == ForageControlMethod::EvolvedActiveVision ||
         config.controlMethod ==
             ForageControlMethod::EvolvedActiveVisionPlusRandom) {
@@ -48,6 +49,7 @@ ForageSensorReading senseAlongSegment(
         // endl;
     }
     robot.sensorAngle = sensorAngle;
+*/
 
     Vec2 segmentStart =
         robot.pos + Vec2(cos(sensorAngle), sin(sensorAngle)) *

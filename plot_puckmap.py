@@ -26,14 +26,14 @@ SPECIFIC_PERFORMANCE = 0.1
 SPECIFIC_TRIAL = True
 SPECIFIC_TRIAL_NUMBER = 0
 
-DRAW_GOAL = True
+DRAW_GOAL = False
 DRAW_PUCKS = True
-DRAW_ROBOTS = True
-DRAW_HEATMAP_ROBOTS = False
+DRAW_ROBOTS = False
+DRAW_HEATMAP_ROBOTS = True
 HEAT_MAP_FINAL_PROPORTION = 0.05
 
 # The "HEATMAP" feature can be used for 'eighth', 'middle' and 'end' but not for 'start'
-DRAW_STAGE = 'start' # 'start', 'eighth', 'middle', 'end
+DRAW_STAGE = 'end' # 'start', 'eighth', 'middle', 'end
 
 N_ROBOTS = None
 N_PUCKS = None
@@ -41,8 +41,8 @@ SAVE_FIG = True
 START_TRIAL = 0
 LAST_TRIAL = 0
 
-WIDTH = 800 #1200
-HEIGHT = 400 #600
+WIDTH = 800
+HEIGHT = 400
 ROBOT_RADIUS = 10
 PUCK_RADIUS = 20
 
