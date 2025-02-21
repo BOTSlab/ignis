@@ -38,7 +38,7 @@ public:
     {
         robotIndexToSensorReadingMap = ForageSensing::allRobotsSense(simWorldState);
         ForageControl::allRobotsSetControls(simWorldState, robotIndexToSensorReadingMap);
-        if (config.controlMethod == ControlMethod::ThreeParameterGauci)
+        if (config.controlMethod == ControlMethod::ThreeParameterCluster)
             evaluateDispersion();
         else
             evaluateDistanceToGoal();

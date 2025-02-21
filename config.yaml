@@ -1,5 +1,25 @@
-# One of the following: "ThreeParameterGauci", "FiveParameterCai25", "EightParameterRandom"
-controlMethod: "FiveParameterCai25"
+# controlMethod should be one of the following: 
+#   "ThreeParameterCluster", "FiveParameterForage"
+#
+# controlParameters should have a matching length.
+
+# The following were the optimized parameters as described/found in the paper
+# submitted to CAI 2025
+#controlMethod: "ThreeParameterCluster"
+#controlParameters: [0.128473, -0.0644482, -0.957974]
+
+#controlMethod: "FiveParameterForage"
+#controlParameters: [0.323982, -0.314569, -1.0, 0.810249, 1.0]
+
+#
+# The following parameters were obtained post-paper submission.
+#
+
+#controlMethod: "ThreeParameterCluster"
+#controlParameters: [-0.146167, 0.107422, 0.857339]
+
+controlMethod: "FiveParameterForage"
+controlParameters: [-0.241251, 0.248339, 0.97912, -0.727559, 0.949163]
 
 width: 800
 height: 400
@@ -11,7 +31,7 @@ puckRadius: 20.0
 maxForwardSpeed: 0.25
 maxAngularSpeed: 1.0
 
-nGenerations: 500
+nGenerations: 100
 populationSize: 10
 
 runsPerEvaluation: 10

@@ -10,9 +10,8 @@ using namespace std;
 
 enum class ControlMethod
 {
-    ThreeParameterGauci,
-    FiveParameterCai25,
-    EightParameterRandom
+    ThreeParameterCluster,
+    FiveParameterForage
 };
 
 class Config
@@ -28,7 +27,7 @@ public:
         return *instance;
     }
 
-    ControlMethod controlMethod = ControlMethod::ThreeParameterGauci;
+    ControlMethod controlMethod = ControlMethod::ThreeParameterCluster;
     vector<double> controlParameters;
 
     int width = 800;
@@ -59,12 +58,10 @@ private:
         YAML::Node config = YAML::LoadFile(filename);
 
         std::string controlMethodStr = config["controlMethod"].as<std::string>();
-        if (controlMethodStr == "ThreeParameterGauci")
-            controlMethod = ControlMethod::ThreeParameterGauci;
-        else if (controlMethodStr == "FiveParameterCai25")
-            controlMethod = ControlMethod::FiveParameterCai25;
-        else if (controlMethodStr == "EightParameterRandom")
-            controlMethod = ControlMethod::EightParameterRandom;
+        if (controlMethodStr == "ThreeParameterCluster")
+            controlMethod = ControlMethod::ThreeParameterCluster;
+        else if (controlMethodStr == "FiveParameterForage")
+            controlMethod = ControlMethod::FiveParameterForage;
         else
             throw std::runtime_error("Unknown control method: " + controlMethodStr);
 

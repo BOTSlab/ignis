@@ -179,7 +179,7 @@ void plotWorldState(const char *title, const ForageScenario &forageScenario)
         double scaleFactor = plotSizeInPixels.x / (plotRect.X.Max - plotRect.X.Min);
 
         // Draw the goal position.
-        if (config.controlMethod != ControlMethod::ThreeParameterGauci) {
+        if (config.controlMethod != ControlMethod::ThreeParameterCluster) {
             ImPlot::SetNextMarkerStyle(ImPlotMarker_Cross, scaleFactor * 40, green, IMPLOT_AUTO, green);
             ImPlot::PlotScatter("Goal", &worldState->goalPos.x, &worldState->goalPos.y, 1);
         }

@@ -98,7 +98,7 @@ int main()
 
     // With a batch_size of 1, 1000 steps takes about 4 minutes
     // if grid is false, then 1000 steps is about 6 minutes
-    size_t n = 20000; // 1e6;
+    size_t n = 1000; // 1e6;
     for (size_t i = 0; i < n / Params::batch_size; ++i) {
         map_elites.step();
         qd_ofs << i * Params::batch_size << " " << map_elites.qd_score() << std::endl;

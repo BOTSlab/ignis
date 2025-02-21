@@ -38,8 +38,7 @@ ForageSensorReading senseAlongSegment(
 
     // This is the active vision component, which can modify the sensor's angle.
     double sensorAngle = robot.theta;
-    if (config.controlMethod == ControlMethod::FiveParameterCai25 ||
-        config.controlMethod == ControlMethod::EightParameterRandom) {
+    if (config.controlMethod == ControlMethod::FiveParameterForage) {
         // Use parameters K_3 and K_4 to modify the sensor angle.
         double p1 = config.controlParameters[3];
         double p2 = config.controlParameters[4];
