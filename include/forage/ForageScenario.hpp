@@ -18,6 +18,8 @@
 using namespace ForageSensing;
 
 class ForageScenario : public Scenario {
+    Config &config;
+
 public:
     ForageSensing::MapOfSensorReadings robotIndexToSensorReadingMap;
 
@@ -27,7 +29,7 @@ public:
     double currentAverageRobotAngularSpeed = 0, cumulativeAverageRobotAngularSpeed = 0;
     int stepsWithRobotRobotCollisions = 0;
 
-    ForageScenario(unsigned int seed) : Scenario()
+    ForageScenario(unsigned int seed) : Scenario(), config(Config::getInstance())
     {
         reset(seed);
     }
@@ -36,7 +38,7 @@ public:
     {
         robotIndexToSensorReadingMap = ForageSensing::allRobotsSense(simWorldState);
         ForageControl::allRobotsSetControls(simWorldState, robotIndexToSensorReadingMap);
-        if (config.controlMethod == ForageControlMethod::EvolvedGauci)
+        if (config.controlMethod == ControlMethod::ThreeParameterGauci)
             evaluateDispersion();
         else
             evaluateDistanceToGoal();

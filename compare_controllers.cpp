@@ -5,6 +5,8 @@
 
 void evaluate_controller(string filename)
 {
+    Config &config = Config::getInstance();
+
     // Read in the parameters from the given file
     cout << "Reading from " << filename << endl;
     std::ifstream parametersFile(filename);

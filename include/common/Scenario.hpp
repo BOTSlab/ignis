@@ -4,8 +4,6 @@
 
 class Scenario {
 public:
-    Config config;
-
     std::shared_ptr<WorldState> simWorldState;
 
     // Simulation state variables.

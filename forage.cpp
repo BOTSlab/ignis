@@ -100,8 +100,8 @@ void plotInteraction(double scaleFactor, Config &config, std::shared_ptr<WorldSt
 void perRobotPlots(size_t robotIndex, const ForageScenario &forageScenario, double scaleFactor)
 {
 //cout << "perRobotPlots - START" << endl;
+    Config &config = Config::getInstance();
     auto worldState = forageScenario.simWorldState;
-    auto config = forageScenario.config;
     double noseRadius = 0.1 * config.robotRadius;
     auto color = ImPlot::GetColormapColor(robotIndex + 2);
 
@@ -155,8 +155,8 @@ void perRobotPlots(size_t robotIndex, const ForageScenario &forageScenario, doub
 
 void plotWorldState(const char *title, const ForageScenario &forageScenario)
 {
+    Config &config = Config::getInstance();
     auto worldState = forageScenario.simWorldState;
-    auto config = forageScenario.config;
     double noseRadius = 0.1 * config.robotRadius;
 
     double boundaryXs[] = {0, static_cast<double>(config.width), static_cast<double>(config.width), 0};
@@ -179,7 +179,7 @@ void plotWorldState(const char *title, const ForageScenario &forageScenario)
         double scaleFactor = plotSizeInPixels.x / (plotRect.X.Max - plotRect.X.Min);
 
         // Draw the goal position.
-        if (config.controlMethod != ForageControlMethod::EvolvedGauci) {
+        if (config.controlMethod != ControlMethod::ThreeParameterGauci) {
             ImPlot::SetNextMarkerStyle(ImPlotMarker_Cross, scaleFactor * 40, green, IMPLOT_AUTO, green);
             ImPlot::PlotScatter("Goal", &worldState->goalPos.x, &worldState->goalPos.y, 1);
         }
@@ -239,6 +239,8 @@ void handleControlsWindow(ForageScenario &forageScenario, ImGuiIO &io)
 // Main code
 int main(int, char **)
 {
+    Config &config = Config::getInstance();
+
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit())
         return 1;

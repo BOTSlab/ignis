@@ -28,6 +28,8 @@ ForageSensorReading senseAlongSegment(
     CommonTypes::Robot &robot,
     size_t &robotIndex)
 {
+    Config &config = Config::getInstance();
+
     // Determine alpha, the angle between the robot's heading and the local
     // goal direction.
     double angleToGoal = atan2(worldState->goalPos.y - robot.pos.y,
@@ -37,10 +39,8 @@ ForageSensorReading senseAlongSegment(
 
     // This is the active vision component, which can modify the sensor's angle.
     double sensorAngle = robot.theta;
-/*
-    if (config.controlMethod == ForageControlMethod::EvolvedActiveVision ||
-        config.controlMethod ==
-            ForageControlMethod::EvolvedActiveVisionPlusRandom) {
+    if (config.controlMethod == ControlMethod::FiveParameterCai25 ||
+        config.controlMethod == ControlMethod::EightParameterRandom) {
         // Use parameters K_3 and K_4 to modify the sensor angle.
         double p1 = parameters.vec[3];
         double p2 = parameters.vec[4];
@@ -49,7 +49,6 @@ ForageSensorReading senseAlongSegment(
         // endl;
     }
     robot.sensorAngle = sensorAngle;
-*/
 
     Vec2 segmentStart =
         robot.pos + Vec2(cos(sensorAngle), sin(sensorAngle)) *

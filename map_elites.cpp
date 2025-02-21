@@ -15,6 +15,8 @@ struct ForagingProblem {
 
     const features_t& eval(const indiv_t& v, S& fit)
     {
+        Config &config = Config::getInstance();
+
         // Remap the first five parameters to the interval [-1, 1]
         for (int i=0; i<4; ++i)
             parameters.vec[i] = 2 * v[i] - 1;

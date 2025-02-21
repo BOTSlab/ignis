@@ -10,6 +10,7 @@
     "implot",
     "opengl",
     "pagmo2",
-    "tbb"
+    "tbb",
+    "yaml-cpp"
   ]
 }

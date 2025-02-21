@@ -18,6 +18,8 @@ namespace ForageControl {
 // as well as the evolved active vision controller (EvolvedActiveVision).
 ControlInput gauciControl(const ForageSensorReading &reading)
 {
+    Config &config = Config::getInstance();
+
     double angular = 0;
     if (reading.hitValue == 0)
         angular = parameters.vec[0];
@@ -38,6 +40,8 @@ ControlInput gauciControl(const ForageSensorReading &reading)
 // noise added (EvolvedActiveVisionPlusRandom).
 ControlInput gauciControlPlusRandom(const ForageSensorReading &reading)
 {
+    Config &config = Config::getInstance();
+
     static std::random_device rd;
     static std::mt19937 gen(rd());
     static std::uniform_real_distribution<double> rand(-1.0, 1.0);
@@ -153,16 +157,18 @@ ControlInput evolvedSpinner6(const ForageSensorReading &reading)
 
 void allRobotsSetControls(std::shared_ptr<WorldState> worldState, ForageSensing::MapOfSensorReadings &robotIndexToSensorReadings)
 {
+    Config &config = Config::getInstance();
+
     for (const auto &robotIndexAndSensorReading : robotIndexToSensorReadings)
     {
         size_t robotIndex = robotIndexAndSensorReading.first;
         Robot &robot = worldState->robots[robotIndex];
         const auto &sensorReading = robotIndexAndSensorReading.second;
 
-        if (config.controlMethod == ForageControlMethod::EvolvedGauci || 
-            config.controlMethod == ForageControlMethod::EvolvedActiveVision)
+        if (config.controlMethod == ControlMethod::ThreeParameterGauci || 
+            config.controlMethod == ControlMethod::FiveParameterCai25)
             robot.controlInput = gauciControl(sensorReading);
-        else if (config.controlMethod == ForageControlMethod::EvolvedActiveVisionPlusRandom)
+        else if (config.controlMethod == ControlMethod::EightParameterRandom)
             robot.controlInput = gauciControlPlusRandom(sensorReading);
         else
             throw std::runtime_error("Unknown control method!");

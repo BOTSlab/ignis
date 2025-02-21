@@ -69,7 +69,8 @@ struct WorldState
         for (const auto& puck : pucks)
             sumSquaredDistances += (puck.pos - centroid).lengthSquared();
 
-        return sumSquaredDistances / (4 * config.puckRadius * config.puckRadius);
+        double puckRadius = Config::getInstance().puckRadius;
+        return sumSquaredDistances / (4 * puckRadius * puckRadius);
     }
 
     double getSSDPucksToGoal() const

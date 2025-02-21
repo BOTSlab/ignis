@@ -23,6 +23,8 @@ struct the_problem {
 
     vector_double fitness(const vector_double &dv) const
     {
+        Config &config = Config::getInstance();
+
         for (int i=0; i<parameters.vec.size(); ++i)
             parameters.vec[i] = dv[i];
 
@@ -52,6 +54,8 @@ struct the_problem {
 
 int main()
 {
+    Config &config = Config::getInstance();
+
     // Prompting the user for a base name, then create a directory with that
     // name to store results of the run.  
     std::string name;

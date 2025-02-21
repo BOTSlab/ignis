@@ -12,6 +12,8 @@ const double dragCoefficient = 0.9;
 // Handle collisions between all circle bodies in the world by updating their velocities.
 void dynamicCollisionHandling(std::vector<CircleBody*> allBodies, int &nRobotRobotCollisions, int &nRobotPuckCollisions)
 {
+    Config &config = Config::getInstance();
+
     for (auto& b1 : allBodies) {
         for (auto& b2 : allBodies) {
             if (b1 == b2)
@@ -65,6 +67,8 @@ void dynamicCollisionHandling(std::vector<CircleBody*> allBodies, int &nRobotRob
 // Handle collisions between all circle bodies by modifying their positions.
 void staticCollisionHandling(std::vector<CircleBody*> allBodies, int &nRobotRobotCollisions, int &nRobotPuckCollisions)
 {
+    Config &config = Config::getInstance();
+
     for (auto& b1 : allBodies) {
         for (auto& b2 : allBodies) {
             if (b1 == b2)
@@ -103,6 +107,8 @@ void staticCollisionHandling(std::vector<CircleBody*> allBodies, int &nRobotRobo
 // Handle collisions between all circle bodies and the boundaries of the world.
 void boundaryCollisionHandling(std::vector<CircleBody*> allBodies, int &nRobotBoundaryCollisions)
 {
+    Config &config = Config::getInstance();
+
     for (auto& body : allBodies) {
         // Check if the body is outside the boundary
         if (body->pos.x - body->radius < 0) {
@@ -134,6 +140,8 @@ void boundaryCollisionHandling(std::vector<CircleBody*> allBodies, int &nRobotBo
 
 void update(std::shared_ptr<WorldState> worldState)
 {
+    Config &config = Config::getInstance();
+
     auto allBodies = worldState->getAllCircleBodies();
 
     dynamicCollisionHandling(allBodies, worldState->nRobotRobotCollisions, worldState->nRobotPuckCollisions);

@@ -14,6 +14,7 @@ find_package(imgui CONFIG REQUIRED)
 find_package(implot CONFIG REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(Pagmo REQUIRED)
+find_package(yaml-cpp CONFIG REQUIRED)
 
 # OpenMP requires some further work...
 set(OPENMP_LIBRARIES "/opt/homebrew/opt/libomp/lib")
@@ -38,18 +39,22 @@ find_package(OpenMP REQUIRED)
 find_package(TBB CONFIG REQUIRED)
 
 add_executable(forage forage.cpp)
+target_link_libraries(forage PRIVATE yaml-cpp::yaml-cpp)
 target_link_libraries(forage PRIVATE imgui::imgui implot::implot OpenGL::GL)
 target_include_directories(forage PRIVATE imgui::imgui)
 
 add_executable(optimize optimize.cpp)
+target_link_libraries(optimize PRIVATE yaml-cpp::yaml-cpp)
 target_link_libraries(optimize PRIVATE Pagmo::pagmo)
 target_link_libraries(optimize PRIVATE OpenMP::OpenMP_CXX)
 #if(OpenMP_CXX_FOUND)
 #endif()
 
 add_executable(map_elites map_elites.cpp)
+target_link_libraries(map_elites PRIVATE yaml-cpp::yaml-cpp)
 target_link_libraries(map_elites PRIVATE TBB::tbb TBB::tbbmalloc)
 target_link_libraries(map_elites PRIVATE OpenMP::OpenMP_CXX)
 
 add_executable(compare_controllers compare_controllers.cpp)
+target_link_libraries(compare_controllers PRIVATE yaml-cpp::yaml-cpp)
 target_link_libraries(compare_controllers PRIVATE OpenMP::OpenMP_CXX)

@@ -20,11 +20,13 @@ struct Parameters
     double gauci3[3] = {0, 0, 0};
     */
     Parameters() {
-        if (config.controlMethod == ForageControlMethod::EvolvedGauci)
+        Config &config = Config::getInstance();
+
+        if (config.controlMethod == ControlMethod::ThreeParameterGauci)
             vec = {0, 0, 0};
-        else if (config.controlMethod == ForageControlMethod::EvolvedActiveVision)
+        else if (config.controlMethod == ControlMethod::FiveParameterCai25)
             vec = {0, 0, 0, 0, 0};
-        else if (config.controlMethod == ForageControlMethod::EvolvedActiveVisionPlusRandom)
+        else if (config.controlMethod == ControlMethod::EightParameterRandom)
             vec = {0, 0, 0, 0, 0, 0, 0, 0};
         else
             throw std::runtime_error("Unknown control method!");

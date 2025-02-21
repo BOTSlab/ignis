@@ -1,76 +1,98 @@
 #pragma once
 #include "common/CommonTypes.hpp"
+#include <yaml-cpp/yaml.h>
+#include <cmath>
+#include <memory>
+#include <string>
 
-enum class ForageControlMethod
+enum class ControlMethod
 {
-    EvolvedGauci,
-    EvolvedActiveVision,
-    EvolvedActiveVisionPlusRandom
+    ThreeParameterGauci,
+    FiveParameterCai25,
+    EightParameterRandom
 };
 
-enum class OverallMethod
+class Config
 {
-    DilatedPolygonCurves,
-    ArcCurves
+public:
+    static Config& getInstance()
+    {
+        if (!instance)
+        {
+            instance = std::unique_ptr<Config>(new Config());
+            instance->load("config.yaml");
+        }
+        return *instance;
+    }
+
+    ControlMethod controlMethod = ControlMethod::ThreeParameterGauci;
+
+    int width = 800;
+    int height = 400;
+    int coldStartSteps = 0;
+    int numberOfRobots = 5;
+    int numberOfPucks = 20;
+    double robotRadius = 10;
+    double puckRadius = 20;
+    double maxForwardSpeed = 0.25;
+    double maxAngularSpeed = 1.0;
+
+    unsigned int nGenerations = 500;
+    unsigned int populationSize = 10;
+
+    unsigned int runsPerEvaluation = 10;
+    unsigned int stepsPerOptRun = 2000;
+
+    unsigned int stepsPerDemoRun = 2000;
+
+    double segmentSensorOffset = 0.1;
+    double maxSegmentSensorLength = sqrt(width * width + height * height);
+    double slowedSteps = 0;
+
+private:
+    void load(const std::string& filename)
+    {
+        YAML::Node config = YAML::LoadFile(filename);
+
+        std::string controlMethodStr = config["controlMethod"].as<std::string>();
+        if (controlMethodStr == "ThreeParameterGauci")
+            controlMethod = ControlMethod::ThreeParameterGauci;
+        else if (controlMethodStr == "FiveParameterCai25")
+            controlMethod = ControlMethod::FiveParameterCai25;
+        else if (controlMethodStr == "EightParameterRandom")
+            controlMethod = ControlMethod::EightParameterRandom;
+        else
+            throw std::runtime_error("Unknown control method: " + controlMethodStr);
+
+        width = config["width"].as<int>();
+        height = config["height"].as<int>();
+        coldStartSteps = config["coldStartSteps"].as<int>();
+        numberOfRobots = config["numberOfRobots"].as<int>();
+        numberOfPucks = config["numberOfPucks"].as<int>();
+        robotRadius = config["robotRadius"].as<double>();
+        puckRadius = config["puckRadius"].as<double>();
+        maxForwardSpeed = config["maxForwardSpeed"].as<double>();
+        maxAngularSpeed = config["maxAngularSpeed"].as<double>();
+
+        nGenerations = config["nGenerations"].as<unsigned int>();
+        populationSize = config["populationSize"].as<unsigned int>();
+
+        runsPerEvaluation = config["runsPerEvaluation"].as<unsigned int>();
+        stepsPerOptRun = config["stepsPerOptRun"].as<unsigned int>();
+
+        stepsPerDemoRun = config["stepsPerDemoRun"].as<unsigned int>();
+
+        segmentSensorOffset = config["segmentSensorOffset"].as<double>();
+        maxSegmentSensorLength = config["maxSegmentSensorLength"].as<double>();
+        slowedSteps = config["slowedSteps"].as<double>();
+    }
+
+    Config() = default;
+    Config(const Config&) = delete;
+    Config& operator=(const Config&) = delete;
+
+    static std::unique_ptr<Config> instance;
 };
 
-enum class CurveBlendMethod
-{
-    Bulge
-};
-
-enum class DilationOption
-{
-    JustZero,
-    PuckRadius,
-    DilationDelta
-};
-
-
-struct Config
-{
-    const ForageControlMethod controlMethod = ForageControlMethod::EvolvedGauci;
-
-    const OverallMethod overallMethod = OverallMethod::DilatedPolygonCurves;
-    const CurveBlendMethod curveBlendMethod = CurveBlendMethod::Bulge;
-    const DilationOption dilationOption = DilationOption::DilationDelta;
-
-    const int width = 800;
-    const int height = 400;
-    const int coldStartSteps = 0;
-    const int numberOfRobots = 5;
-    const int numberOfPucks = 20;
-    const double robotRadius = 10;
-    const double puckRadius = 20;
-    const double maxForwardSpeed = 0.25;
-    const double maxAngularSpeed = 1.0;
-
-    // For curve judgment.
-    const int maxStallSteps = 1000;
-
-    // For dilation of Voronoi cells.
-    const double dilationDelta = 10;
-
-    // For generating arc-curves.
-    const double maxTrackLength = 400;
-    const double sampleSpacing = 50;
-
-    // For optimize
-    const unsigned int nGenerations = 500;
-    const unsigned int populationSize = 10;
-
-    // For map_elites / optimize
-    const unsigned int runsPerEvaluation = 10;
-    const unsigned int stepsPerOptRun = 2000;
-
-    // For demonstrate
-    const unsigned int stepsPerDemoRun = 2000;
-
-    // For Forage scenario.
-    const double segmentSensorOffset = 0.1;
-    const double maxSegmentSensorLength = sqrt(width*width + height*height);
-    const double slowedSteps = 0;
-
-    // For Vorlife scenario.
-    const bool useVoronoi = false;
-} config;
+// Initialize the static member
+std::unique_ptr<Config> Config::instance = nullptr;

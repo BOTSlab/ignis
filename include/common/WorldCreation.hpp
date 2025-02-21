@@ -7,6 +7,8 @@
 namespace WorldCreation {
 
 std::shared_ptr<WorldState> randomWorld(unsigned int seed) {
+    Config &config = Config::getInstance();
+
     // Create a random number generator
     std::mt19937 gen;
     gen.seed(seed);
@@ -35,6 +37,8 @@ std::shared_ptr<WorldState> randomWorld(unsigned int seed) {
 }
 
 std::shared_ptr<WorldState> lineOfRobots() {
+    Config &config = Config::getInstance();
+
     auto world = std::make_shared<WorldState>();
 
     // Create a line of robots

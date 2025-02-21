@@ -1,0 +1,24 @@
+# One of the following: "ThreeParameterGauci", "FiveParameterCai25", "EightParameterRandom"
+controlMethod: "FiveParameterCai25"
+
+width: 800
+height: 400
+coldStartSteps: 0
+numberOfRobots: 5
+numberOfPucks: 20
+robotRadius: 10.0
+puckRadius: 20.0
+maxForwardSpeed: 0.25
+maxAngularSpeed: 1.0
+
+nGenerations: 500
+populationSize: 10
+
+runsPerEvaluation: 10
+stepsPerOptRun: 2000
+
+stepsPerDemoRun: 2000
+
+segmentSensorOffset: 0.1
+maxSegmentSensorLength: 894.4271909999159
+slowedSteps: 0.0
