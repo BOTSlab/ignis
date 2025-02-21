@@ -38,10 +38,10 @@ find_package(OpenMP REQUIRED)
 # Required for map_elites
 find_package(TBB CONFIG REQUIRED)
 
-add_executable(forage forage.cpp)
-target_link_libraries(forage PRIVATE yaml-cpp::yaml-cpp)
-target_link_libraries(forage PRIVATE imgui::imgui implot::implot OpenGL::GL)
-target_include_directories(forage PRIVATE imgui::imgui)
+add_executable(demo demo.cpp)
+target_link_libraries(demo PRIVATE yaml-cpp::yaml-cpp)
+target_link_libraries(demo PRIVATE imgui::imgui implot::implot OpenGL::GL)
+target_include_directories(demo PRIVATE imgui::imgui)
 
 add_executable(optimize optimize.cpp)
 target_link_libraries(optimize PRIVATE yaml-cpp::yaml-cpp)

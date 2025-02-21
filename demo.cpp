@@ -294,6 +294,7 @@ int main(int, char **)
     ImGui_ImplOpenGL3_Init(glsl_version);
 
     // Read in the parameters in parameters.dat into parameters.vec
+    /*
     string dir = "./";
     std::ifstream lastParametersFile(dir + "parameters.dat");
     if (lastParametersFile.is_open()) {
@@ -307,8 +308,9 @@ int main(int, char **)
     } else {
         cout << "Could not open last_parameters.dat.  Using default parameters." << endl;
     }
+    */
 
-    DataLogger dataLogger(0, "data/demonstrate/");
+    DataLogger dataLogger(0, "data/demo/");
     ForageScenario forageScenario(0);
 
     // Main loop
@@ -329,10 +331,10 @@ int main(int, char **)
         if (loopCount % loopsPerUpdate == 0) {
             //cout << "loopCount: " << loopCount << endl;
 // HACK FOR PLOTTING: Force the goal position
-if (!forageScenario.isPaused()) {
-forageScenario.simWorldState->goalPos = Vec2(300, 150);
+//if (!forageScenario.isPaused()) {
+//forageScenario.simWorldState->goalPos = Vec2(300, 150);
 //cout << "goalPos: " << forageScenario.simWorldState->goalPos.x << ", " << forageScenario.simWorldState->goalPos.y << endl;
-}
+//}
 
             if (forageScenario.getStepCount() == config.stepsPerDemoRun)
                 forageScenario.prepareToPause();

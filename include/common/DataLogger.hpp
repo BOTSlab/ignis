@@ -17,7 +17,10 @@ using namespace std;
 
 class DataLogger {
     int m_trialIndex;
-    ofstream m_statsStream, m_robotPoseStream, m_robotSensorAngleStream, m_puckPositionStream;
+    ofstream m_statsStream, m_robotPoseStream, m_robotSensorAngleStream, m_puckPositionStream, m_goalPositionStream;
+
+    // The goal doesn't change, so we only need to write it once
+    bool m_goalWritten = false;
 
 public:
     DataLogger(int trialIndex, std::string dataFilenameBase)
@@ -26,16 +29,18 @@ public:
         if (mkdir(dataFilenameBase.c_str(), 0777) == -1 && errno != EEXIST)
             cerr << "Error creating directory: " << dataFilenameBase << endl;
 
-        stringstream statsFilename, robotPoseFilename, robotSensorAngleFilename, puckPositionFilename;
+        stringstream statsFilename, robotPoseFilename, robotSensorAngleFilename, puckPositionFilename, goalPositionFilename;
         statsFilename << dataFilenameBase << "/stats_" << trialIndex << ".dat";
         robotPoseFilename << dataFilenameBase << "/robotPose_" << trialIndex << ".dat";
         robotSensorAngleFilename << dataFilenameBase << "/robotSensorAngle_" << trialIndex << ".dat";
         puckPositionFilename << dataFilenameBase << "/puckPosition_" << trialIndex << ".dat";
+        goalPositionFilename << dataFilenameBase << "/goalPosition_" << trialIndex << ".dat";
 
         m_statsStream = ofstream(statsFilename.str());
         m_robotPoseStream = ofstream(robotPoseFilename.str());
         m_robotSensorAngleStream = ofstream(robotSensorAngleFilename.str());
         m_puckPositionStream = ofstream(puckPositionFilename.str());
+        m_goalPositionStream = ofstream(goalPositionFilename.str());
     }
 
     void writeToFile(shared_ptr<WorldState> worldState, double stepCount, double eval, double cumEval)
@@ -63,5 +68,11 @@ public:
         }
         m_puckPositionStream << "\n";
         m_puckPositionStream.flush();
+
+        if (!m_goalWritten) {
+            m_goalPositionStream << worldState->goalPos.x << " " << worldState->goalPos.y << "\n";
+            m_goalPositionStream.flush();
+            m_goalWritten = true;
+        }
     }
 };

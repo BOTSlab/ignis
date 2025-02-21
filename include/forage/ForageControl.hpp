@@ -7,7 +7,6 @@
 #include "common/Config.hpp"
 #include "common/CommonTypes.hpp"
 #include "forage/ForageSensing.hpp"
-#include "forage/Parameters.hpp"
 
 using namespace CommonTypes;
 using namespace ForageSensing;
@@ -22,13 +21,13 @@ ControlInput gauciControl(const ForageSensorReading &reading)
 
     double angular = 0;
     if (reading.hitValue == 0)
-        angular = parameters.vec[0];
+        angular = config.controlParameters[0];
 
     else if (reading.hitValue == 1)
-        angular = parameters.vec[1];
+        angular = config.controlParameters[1];
 
     else if (reading.hitValue == 2)
-        angular = parameters.vec[2];
+        angular = config.controlParameters[2];
 
     else
         throw std::runtime_error("Unknown hit value: " + std::to_string(reading.hitValue));
@@ -48,13 +47,13 @@ ControlInput gauciControlPlusRandom(const ForageSensorReading &reading)
 
     double angular = 0;
     if (reading.hitValue == 0)
-        angular = parameters.vec[0] + parameters.vec[1] * rand(gen);
+        angular = config.controlParameters[0] + config.controlParameters[1] * rand(gen);
 
     else if (reading.hitValue == 1)
-        angular = parameters.vec[2] + parameters.vec[3] * rand(gen);
+        angular = config.controlParameters[2] + config.controlParameters[3] * rand(gen);
 
     else if (reading.hitValue == 2)
-        angular = parameters.vec[4] + parameters.vec[5] * rand(gen);
+        angular = config.controlParameters[4] + config.controlParameters[5] * rand(gen);
 
     else
         throw std::runtime_error("Unknown hit value");

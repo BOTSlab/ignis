@@ -4,6 +4,9 @@
 #include <cmath>
 #include <memory>
 #include <string>
+#include <vector>
+
+using namespace std;
 
 enum class ControlMethod
 {
@@ -26,6 +29,7 @@ public:
     }
 
     ControlMethod controlMethod = ControlMethod::ThreeParameterGauci;
+    vector<double> controlParameters;
 
     int width = 800;
     int height = 400;
@@ -63,6 +67,8 @@ private:
             controlMethod = ControlMethod::EightParameterRandom;
         else
             throw std::runtime_error("Unknown control method: " + controlMethodStr);
+
+        controlParameters = config["controlParameters"].as<vector<double>>();
 
         width = config["width"].as<int>();
         height = config["height"].as<int>();

@@ -11,7 +11,6 @@
 
 #include "forage/ForageScenario.hpp"
 #include "common/Config.hpp"
-#include "forage/Parameters.hpp"
 
 #include "omp.h"
 
@@ -25,8 +24,8 @@ struct the_problem {
     {
         Config &config = Config::getInstance();
 
-        for (int i=0; i<parameters.vec.size(); ++i)
-            parameters.vec[i] = dv[i];
+        for (int i=0; i<config.controlParameters.size(); ++i)
+            config.controlParameters[i] = dv[i];
 
         double sum = 0;
         #pragma omp parallel for reduction(+:sum)
@@ -42,8 +41,10 @@ struct the_problem {
     }
     std::pair<vector_double, vector_double> get_bounds() const
     {
+        Config &config = Config::getInstance();
+
         vector_double lower, upper;
-        for (int i=0; i<parameters.vec.size(); ++i) {
+        for (int i=0; i<config.controlParameters.size(); ++i) {
             lower.push_back(-1);
             upper.push_back(1);
         }
@@ -77,7 +78,7 @@ int main()
     lastNameFile << name << std::endl;
 
     // Make sure Parameters.vec has the right size.
-    logFile << "Number of parameters: " << parameters.vec.size() << endl;
+    logFile << "Number of parameters: " << config.controlParameters.size() << endl;
 
     auto beforeTime = high_resolution_clock::now();
 

@@ -4,7 +4,6 @@
 #include "common/Config.hpp"
 #include "common/Utils.hpp"
 #include "common/WorldState.hpp"
-#include "forage/Parameters.hpp"
 #include <cmath>
 #include <map>
 #include <utility>
@@ -42,8 +41,8 @@ ForageSensorReading senseAlongSegment(
     if (config.controlMethod == ControlMethod::FiveParameterCai25 ||
         config.controlMethod == ControlMethod::EightParameterRandom) {
         // Use parameters K_3 and K_4 to modify the sensor angle.
-        double p1 = parameters.vec[3];
-        double p2 = parameters.vec[4];
+        double p1 = config.controlParameters[3];
+        double p2 = config.controlParameters[4];
         sensorAngle += p1 * std::cos(alpha - p2 * M_PI);
         // cerr << "alpha: " << alpha << " sensorAngle: " << sensorAngle <<
         // endl;

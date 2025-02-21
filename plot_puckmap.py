@@ -9,15 +9,16 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from math import asin, cos, pi, sin
+import yaml
 
 # Modify font size for all matplotlib plots.
 plt.rcParams.update({'font.size': 9.1})
 
 BASE_NAME = "./data"
 
-ARENA_NAMES = ["demonstrate"]
+ARENA_NAMES = ["demo"]
 
-ARENA_LONG_NAMES = {"demonstrate":"TBD"}
+ARENA_LONG_NAMES = {"demo":"TBD"}
 
 BEST_TRIAL = False
 WORST_TRIAL = False
@@ -26,7 +27,7 @@ SPECIFIC_PERFORMANCE = 0.1
 SPECIFIC_TRIAL = True
 SPECIFIC_TRIAL_NUMBER = 0
 
-DRAW_GOAL = False
+DRAW_GOAL = True
 DRAW_PUCKS = True
 DRAW_ROBOTS = False
 DRAW_HEATMAP_ROBOTS = True
@@ -35,25 +36,43 @@ HEAT_MAP_FINAL_PROPORTION = 0.05
 # The "HEATMAP" feature can be used for 'eighth', 'middle' and 'end' but not for 'start'
 DRAW_STAGE = 'end' # 'start', 'eighth', 'middle', 'end
 
-N_ROBOTS = None
-N_PUCKS = None
 SAVE_FIG = True
 START_TRIAL = 0
 LAST_TRIAL = 0
 
-WIDTH = 800
-HEIGHT = 400
-ROBOT_RADIUS = 10
-PUCK_RADIUS = 20
+# Variables that will be assigned from the configuration file
+N_ROBOTS = None
+N_PUCKS = None
+WIDTH = None
+HEIGHT = None
+ROBOT_RADIUS = None
+PUCK_RADIUS = None
 
-GOAL_X = 300
-GOAL_Y = 150
+# The goal will be read in from the goalPosition file
+GOAL_X = None
+GOAL_Y = None
 
 def main():
+    global N_ROBOTS, N_PUCKS, WIDTH, HEIGHT, ROBOT_RADIUS, PUCK_RADIUS
+    
+    # Load configuration from YAML file
+    config_path = "config.yaml"
+    with open(config_path, 'r') as file:
+        config = yaml.safe_load(file)
+
+    # Assign values from config
+    N_ROBOTS = config.get('numberOfRobots')
+    N_PUCKS = config.get('numberOfPucks')
+    WIDTH = config.get('width')
+    HEIGHT = config.get('height')
+    ROBOT_RADIUS = config.get('robotRadius')
+    PUCK_RADIUS = config.get('puckRadius')
+    
     fig, axes = plt.subplots(1, len(ARENA_NAMES), sharex='col', squeeze=False)
 
     subplot_column = 0
     for arena_name in ARENA_NAMES:
+        print(f"Processing arena: {arena_name}")
         puckmap_for_arena(axes[0, subplot_column], arena_name)
         subplot_column += 1
 
@@ -70,7 +89,7 @@ def main():
         fig.savefig(filename, bbox_inches='tight')
 
 def puckmap_for_arena(axes, arena_name):
-    global N_ROBOTS, N_PUCKS
+    global GOAL_X, GOAL_Y
     print(f"puckmap_for_arena for arena: {arena_name}")
 
     chosen_puck_df = None
@@ -86,11 +105,16 @@ def puckmap_for_arena(axes, arena_name):
         sensor_angle_df = dataframe_per_trial('robotSensorAngle', arena_name, trial)
         puck_df = dataframe_per_trial('puckPosition', arena_name, trial)
         
-        # Compute the number of pucks and robots
-        N_PUCKS = (len(puck_df.columns) - 1) // 2
-        N_ROBOTS = (len(robot_df.columns) - 1) // 3
-        print(f"Number of pucks: {N_PUCKS}")
-        print(f"Number of robots: {N_ROBOTS}")
+        # The goal position is stored only once per trial, so we can just read the first row
+        filename = get_filename('goalPosition', arena_name, trial)
+        print("Loading: {}".format(filename))
+        goal_df = pd.read_csv(filename, sep=" ", header=None)
+        print("START GOAL DATAFRAME")
+        print(goal_df)
+        print("END GOAL DATAFRAME")
+        GOAL_X = goal_df.iloc[0, 0]
+        GOAL_Y = goal_df.iloc[0, 1]
+        print("GOAL_X: {}, GOAL_Y: {}".format(GOAL_X, GOAL_Y))
 
         if SPECIFIC_TRIAL and trial == SPECIFIC_TRIAL_NUMBER:
             puckmap(axes, puck_df, robot_df, sensor_angle_df, arena_name)
@@ -249,12 +273,16 @@ def puckmap(axes, puck_df, robot_df, sensor_angle_df, arena_name):
     #for x, y in df:
     #df.plot(ax=axes, x='time', y=column_of_interest, label=label, linewidth=0.5)
 
-def dataframe_per_trial(datatype, arena_name, trial):
-
+def get_filename(datatype, arena_name, trial):
     filename = BASE_NAME + "/"
     if len(arena_name) > 0:
         filename += arena_name + "/"
     filename += "{}_{}.dat".format(datatype, trial)
+    return filename
+
+def dataframe_per_trial(datatype, arena_name, trial):
+
+    filename = get_filename(datatype, arena_name, trial)
 
     print("Loading: {}".format(filename))
     dataframe = pd.read_csv(filename, sep=" ")

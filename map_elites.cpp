@@ -2,7 +2,6 @@
 
 #include "forage/ForageScenario.hpp"
 #include "common/Config.hpp"
-#include "forage/Parameters.hpp"
 
 template <typename Params, typename S = double>
 struct ForagingProblem {
@@ -17,9 +16,9 @@ struct ForagingProblem {
     {
         Config &config = Config::getInstance();
 
-        // Remap the first five parameters to the interval [-1, 1]
-        for (int i=0; i<4; ++i)
-            parameters.vec[i] = 2 * v[i] - 1;
+        // Remap v from [0, 1] to controlParameters in [-1, 1]
+        for (int i=0; i<config.controlParameters.size(); ++i)
+            config.controlParameters[i] = 2 * v[i] - 1;
 
         double sum = 0;
         //double sumFeature1 = 0;

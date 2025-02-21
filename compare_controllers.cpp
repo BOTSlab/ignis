@@ -1,7 +1,6 @@
 #include <fstream>
 #include "forage/ForageScenario.hpp"
 #include "common/Config.hpp"
-#include "forage/Parameters.hpp"
 
 void evaluate_controller(string filename)
 {
