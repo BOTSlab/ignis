@@ -293,24 +293,9 @@ int main(int, char **)
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init(glsl_version);
 
-    // Read in the parameters in parameters.dat into parameters.vec
-    /*
-    string dir = "./";
-    std::ifstream lastParametersFile(dir + "parameters.dat");
-    if (lastParametersFile.is_open()) {
-        parameters.vec.clear();
-        double value;
-        while (lastParametersFile >> value)
-            parameters.vec.push_back(value);
-        cout << "Read in the following parameters: ";
-        for (int i = 0; i < parameters.vec.size(); ++i)
-            cout << parameters.vec[i] << " ";
-    } else {
-        cout << "Could not open last_parameters.dat.  Using default parameters." << endl;
-    }
-    */
-
-    DataLogger dataLogger(0, "data/demo/");
+    std::unique_ptr<DataLogger> dataLogger;
+    if (config.demoLoggingInterval > 0)
+        dataLogger = std::make_unique<DataLogger>(0, "data/demo/");
     ForageScenario forageScenario(0);
 
     // Main loop
@@ -342,8 +327,9 @@ int main(int, char **)
             forageScenario.step();
             
             int stepCount = forageScenario.getStepCount();
-            if (!forageScenario.isPaused() && (stepCount == 0 || stepCount % 10 == 0))
-                dataLogger.writeToFile(forageScenario.simWorldState, forageScenario.getStepCount(), forageScenario.currentEvaluation, forageScenario.cumulativeEvaluation);
+            if (!forageScenario.isPaused() && (config.demoLoggingInterval > 0) &&
+                (stepCount == 0 || stepCount % config.demoLoggingInterval == 0))
+                dataLogger->writeToFile(forageScenario.simWorldState, forageScenario.getStepCount(), forageScenario.currentEvaluation, forageScenario.cumulativeEvaluation);
         }
 
         handleControlsWindow(forageScenario, io);

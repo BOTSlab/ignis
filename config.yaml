@@ -38,6 +38,7 @@ runsPerEvaluation: 10
 stepsPerOptRun: 2000
 
 stepsPerDemoRun: 2000
+demoLoggingInterval: 10
 
 segmentSensorOffset: 0.1
 maxSegmentSensorLength: 894.4271909999159

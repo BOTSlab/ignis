@@ -47,6 +47,7 @@ public:
     unsigned int stepsPerOptRun = 2000;
 
     unsigned int stepsPerDemoRun = 2000;
+    unsigned int demoLoggingInterval = 10;
 
     double segmentSensorOffset = 0.1;
     double maxSegmentSensorLength = sqrt(width * width + height * height);
@@ -84,6 +85,7 @@ private:
         stepsPerOptRun = config["stepsPerOptRun"].as<unsigned int>();
 
         stepsPerDemoRun = config["stepsPerDemoRun"].as<unsigned int>();
+        demoLoggingInterval = config["demoLoggingInterval"].as<unsigned int>();
 
         segmentSensorOffset = config["segmentSensorOffset"].as<double>();
         maxSegmentSensorLength = config["maxSegmentSensorLength"].as<double>();
